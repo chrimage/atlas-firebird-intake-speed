@@ -144,7 +144,7 @@ async function sendToSlack(alertData, env) {
         { title: 'Country', value: alertData.details.country || 'Unknown', short: true },
         { title: 'Time', value: alertData.timestamp, short: true }
       ],
-      footer: 'Your Company Security Monitor',
+      footer: 'Security Monitor',
       footer_icon: 'https://example.com/firebird-icon.png'
     }]
   };
@@ -164,7 +164,7 @@ async function sendToEmail(alertData, env) {
   if (!env.EMAIL_SENDER || !env.SECURITY_EMAIL) return;
 
   const emailContent = `
-SECURITY ALERT - Your Company System
+SECURITY ALERT - Contact Form System
 =====================================
 
 Alert ID: ${alertData.id}
@@ -180,7 +180,7 @@ Details:
 - Country: ${alertData.details.country || 'Unknown'}
 - User Agent: ${alertData.details.userAgent || 'Unknown'}
 
-This is an automated alert from your company security monitoring system.
+This is an automated alert from the security monitoring system.
 Please investigate this event and take appropriate action if necessary.
 
 Dashboard: https://your-worker-name.your-subdomain.workers.dev/admin
@@ -188,7 +188,7 @@ Logs: https://dash.cloudflare.com/workers
   `;
 
   const msg = createMimeMessage();
-  msg.setSender({ name: "Your Company Security", addr: env.FROM_EMAIL });
+  msg.setSender({ name: "Security Monitor", addr: env.FROM_EMAIL });
   msg.setRecipient(env.SECURITY_EMAIL);
   msg.setSubject(`[SECURITY] ${alertData.severity.toUpperCase()} - ${alertData.type}`);
   msg.addMessage({ contentType: 'text/plain', data: emailContent });
