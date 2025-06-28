@@ -3,8 +3,98 @@
  * Single Worker handling contact form + admin panel
  */
 
+import { EmailMessage } from "cloudflare:email";
+import { createMimeMessage } from "mimetext";
+
+interface FormSubmission {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  service_type: string;
+  message: string;
+  timestamp: string;
+}
+
 interface Env {
 	DB: D1Database;
+	EMAIL_SENDER: any;        // New
+	FROM_EMAIL: string;       // New
+	ADMIN_EMAIL: string;      // New
+	ENVIRONMENT?: string;     // New
+}
+
+async function sendAdminNotification(
+  env: Env,
+  submission: FormSubmission
+): Promise<void> {
+  try {
+    const msg = createMimeMessage();
+    
+    // Configure sender and recipient
+    msg.setSender({
+      name: "Atlas Firebird Intake System",
+      addr: env.FROM_EMAIL
+    });
+    msg.setRecipient(env.ADMIN_EMAIL);
+    
+    // Create informative subject line
+    const subjectLine = createSubjectLine(submission);
+    msg.setSubject(subjectLine);
+    
+    // Create email content
+    const emailContent = createEmailContent(submission, env);
+    msg.addMessage({
+      contentType: 'text/plain',
+      data: emailContent
+    });
+
+    // Send email via Cloudflare
+    const message = new EmailMessage(
+      env.FROM_EMAIL,
+      env.ADMIN_EMAIL,
+      msg.asRaw()
+    );
+
+    await env.EMAIL_SENDER.send(message);
+    console.log(`✅ Email sent for submission ${submission.id}`);
+    
+  } catch (error) {
+    console.error(`❌ Email failed for submission ${submission.id}:`, error);
+    // Don't throw - we don't want email failure to break form submission
+  }
+}
+
+function createSubjectLine(submission: FormSubmission): string {
+  const serviceType = submission.service_type || 'General';
+  const customerName = submission.name || 'Unknown';
+  const subject = `New Atlas Firebird Inquiry: ${serviceType} - ${customerName}`;
+  
+  // Truncate to 78 characters for email compatibility
+  return subject.length > 78 ? subject.substring(0, 75) + '...' : subject;
+}
+
+function createEmailContent(submission: FormSubmission, env: Env): string {
+  return `
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔥 New Atlas Firebird Service Request
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+👤 Customer: ${submission.name}
+📧 Email: ${submission.email || 'Not provided'}
+📱 Phone: ${submission.phone || 'Not provided'}
+🔧 Service: ${submission.service_type}
+
+💬 Message:
+${submission.message}
+
+🕒 Submitted: ${new Date(submission.timestamp).toLocaleString()}
+🌐 Environment: ${env.ENVIRONMENT || 'production'}
+📝 Submission ID: ${submission.id}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Reply directly to this email to contact the customer.
+  `.trim();
 }
 
 export default {
@@ -77,10 +167,31 @@ async function handleSubmit(request: Request, env: Env, corsHeaders: Record<stri
 		}
 
 		// Save to database
+		const timestamp = new Date().toISOString();
 		await env.DB.prepare(`
 			INSERT INTO submissions (id, name, email, phone, service_type, message, status, created_at)
 			VALUES (?, ?, ?, ?, ?, ?, 'new', datetime('now'))
 		`).bind(id, name, email, phone, serviceType, message).run();
+
+		// After database save, add email notification
+		const submission: FormSubmission = {
+			id,
+			name: name!,
+			email: email || undefined,
+			phone: phone || undefined,
+			service_type: serviceType!,
+			message: message!,
+			timestamp
+		};
+
+		// Send email notification asynchronously (doesn't block response)
+		if (env.EMAIL_SENDER && env.ADMIN_EMAIL) {
+			console.log("Reaching sendAdminNotification");
+			await sendAdminNotification(env, submission);
+			console.log("sendAdminNotification completed");
+		} else {
+			console.log("EMAIL_SENDER or ADMIN_EMAIL not configured");
+		}
 
 		return new Response(getSuccessHTML(), {
 			headers: { 'Content-Type': 'text/html', ...corsHeaders }

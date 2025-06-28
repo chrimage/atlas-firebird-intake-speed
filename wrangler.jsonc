@@ -9,7 +9,8 @@
 	"account_id": "42787465cd6e717769c0a5427e266a75",
 	"compatibility_date": "2025-06-28",
 	"compatibility_flags": [
-		"global_fetch_strictly_public"
+		"global_fetch_strictly_public",
+	  "nodejs_compat"
 	],
 	"observability": {
 		"enabled": true
@@ -19,6 +20,21 @@
 			"binding": "DB",
 			"database_name": "intake-db",
 			"database_id": "a853ae40-3390-4fe5-b3fb-20606353afd3"
+		}
+	],
+	"vars": {
+		"FROM_EMAIL": "contact@bytecrash.xyz",
+		"ADMIN_EMAIL": "john.chris.smith@gmail.com",
+		"ENVIRONMENT": "production"
+	},
+	"send_email": [
+		{
+			"name": "EMAIL_SENDER",
+			"allowed_destination_addresses": [
+				"john.chris.smith@gmail.com",
+				"admin@atlasfirebird.com",
+				"support@atlasfirebird.com"
+			]
 		}
 	]
 	/**
