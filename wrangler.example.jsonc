@@ -1,0 +1,86 @@
+/**
+ * Example Wrangler Configuration
+ * 
+ * Copy this file to wrangler.jsonc and update the values marked with "TODO"
+ * 
+ * For more details on configuration:
+ * https://developers.cloudflare.com/workers/wrangler/configuration/
+ */
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	
+	// TODO: Change this to your worker name (letters, numbers, hyphens only)
+	"name": "your-contact-form",
+	
+	"main": "src/index.ts",
+	
+	// TODO: Replace with your Cloudflare Account ID
+	// Get this by running: wrangler whoami
+	"account_id": "YOUR_ACCOUNT_ID_HERE",
+	
+	"compatibility_date": "2025-06-28",
+	"compatibility_flags": [
+		"global_fetch_strictly_public",
+		"nodejs_compat"
+	],
+	
+	"observability": {
+		"enabled": true
+	},
+	
+	"d1_databases": [
+		{
+			"binding": "DB",
+			// TODO: Change to your database name
+			"database_name": "your-contact-db",
+			// TODO: Replace with your D1 database ID
+			// Get this by running: wrangler d1 create your-contact-db
+			"database_id": "YOUR_DATABASE_ID_HERE"
+		}
+	],
+	
+	"vars": {
+		// TODO: Change to your sending email address (must be on domain with Cloudflare Email Routing)
+		"FROM_EMAIL": "contact@yourdomain.com",
+		
+		// TODO: Change to where you want admin notifications sent
+		"ADMIN_EMAIL": "admin@yourdomain.com",
+		
+		"ENVIRONMENT": "production"
+	},
+	
+	"send_email": [
+		{
+			"name": "EMAIL_SENDER",
+			"allowed_destination_addresses": [
+				// TODO: Add all email addresses that should receive notifications
+				// These MUST be verified in Cloudflare Email Routing first
+				"admin@yourdomain.com",
+				"support@yourdomain.com",
+				"manager@yourdomain.com"
+			]
+		}
+	]
+	
+	/**
+	 * Optional Advanced Configuration
+	 */
+	
+	// Smart Placement (recommended for global performance)
+	// "placement": { "mode": "smart" },
+	
+	// Custom Domain (set up in Cloudflare Dashboard first)
+	// "routes": [
+	//   { "pattern": "contact.yourdomain.com/*", "custom_domain": true }
+	// ],
+	
+	// Environment-specific variables
+	// "env": {
+	//   "staging": {
+	//     "vars": {
+	//       "ENVIRONMENT": "staging",
+	//       "ADMIN_EMAIL": "staging-admin@yourdomain.com"
+	//     }
+	//   }
+	// }
+}
