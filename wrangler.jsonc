@@ -1,9 +1,9 @@
 /**
  * TEMPLATE CONFIGURATION FILE
- * 
+ *
  * This file contains example/template values.
  * Copy wrangler.example.jsonc to wrangler.jsonc and update with your values.
- * 
+ *
  * For more details: https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {

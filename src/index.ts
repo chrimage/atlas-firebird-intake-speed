@@ -7,6 +7,7 @@
 
 import { EmailMessage } from "cloudflare:email";
 import { createMimeMessage } from "mimetext";
+import { CONFIG, getConfig, validateConfig } from "./config";
 
 interface FormSubmission {
 	id: string;
@@ -98,19 +99,20 @@ async function sendAdminNotification(
   try {
     const msg = createMimeMessage();
     
-    // Configure sender and recipient
+    // Configure sender and recipient using config
+    const config = getConfig(env.ENVIRONMENT);
     msg.setSender({
-      name: "Contact Form System",
+      name: config.email.systemName,
       addr: env.FROM_EMAIL
     });
     msg.setRecipient(env.ADMIN_EMAIL);
     
     // Create informative subject line
-    const subjectLine = createSubjectLine(submission);
+    const subjectLine = createSubjectLine(submission, config);
     msg.setSubject(subjectLine);
     
     // Create email content
-    const emailContent = createEmailContent(submission, env);
+    const emailContent = createEmailContent(submission, env, config);
     msg.addMessage({
       contentType: 'text/plain',
       data: emailContent
@@ -132,19 +134,19 @@ async function sendAdminNotification(
   }
 }
 
-function createSubjectLine(submission: FormSubmission): string {
+function createSubjectLine(submission: FormSubmission, config: typeof CONFIG): string {
   const serviceType = submission.service_type || 'General';
   const customerName = submission.name || 'Unknown';
-  const subject = `New Contact Form Inquiry: ${serviceType} - ${customerName}`;
+  const subject = `${config.email.subjectPrefix}: ${serviceType} - ${customerName}`;
   
   // Truncate to 78 characters for email compatibility
   return subject.length > 78 ? subject.substring(0, 75) + '...' : subject;
 }
 
-function createEmailContent(submission: FormSubmission, env: Env): string {
+function createEmailContent(submission: FormSubmission, env: Env, config: typeof CONFIG): string {
   return `
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔥 New Contact Form Submission
+${config.company.emoji} ${config.email.templates.adminNotification.header}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 👤 Customer: ${submission.name}
@@ -160,19 +162,26 @@ ${submission.message}
 📝 Submission ID: ${submission.id}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Reply directly to this email to contact the customer.
+${config.email.templates.adminNotification.footer}
   `.trim();
 }
 
 export default {
 	async fetch(request: Request, env: Env): Promise<Response> {
 		const url = new URL(request.url);
+		const config = getConfig(env.ENVIRONMENT);
+		
+		// Validate configuration on startup
+		const configErrors = validateConfig(config);
+		if (configErrors.length > 0) {
+			console.warn('Configuration warnings:', configErrors);
+		}
 		
 		// Add CORS headers for all responses
 		const corsHeaders = {
-			'Access-Control-Allow-Origin': '*',
-			'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-			'Access-Control-Allow-Headers': 'Content-Type',
+			'Access-Control-Allow-Origin': config.security.cors.allowedOrigins.join(', '),
+			'Access-Control-Allow-Methods': config.security.cors.allowedMethods.join(', '),
+			'Access-Control-Allow-Headers': config.security.cors.allowedHeaders.join(', '),
 		};
 
 		// Handle preflight requests
@@ -185,21 +194,21 @@ export default {
 			
 			// Landing page with contact form
 			if (url.pathname === '/' && request.method === 'GET') {
-				response = new Response(getContactFormHTML(), {
+				response = new Response(getContactFormHTML(config), {
 					headers: { 'Content-Type': 'text/html', ...corsHeaders }
 				});
 			}
 			// Submit contact form
 			else if (url.pathname === '/submit' && request.method === 'POST') {
-				response = await handleSubmit(request, env, corsHeaders);
+				response = await handleSubmit(request, env, corsHeaders, config);
 			}
 			// Admin panel
 			else if (url.pathname === '/admin' && request.method === 'GET') {
-				response = await handleAdmin(request, env, corsHeaders);
+				response = await handleAdmin(request, env, corsHeaders, config);
 			}
 			// Update submission status
 			else if (url.pathname === '/admin/update' && request.method === 'POST') {
-				response = await handleStatusUpdate(request, env, corsHeaders);
+				response = await handleStatusUpdate(request, env, corsHeaders, config);
 			}
 			// Handle unknown routes
 			else {
@@ -218,7 +227,7 @@ export default {
 	},
 } satisfies ExportedHandler<Env>;
 
-async function handleSubmit(request: Request, env: Env, corsHeaders: Record<string, string>) {
+async function handleSubmit(request: Request, env: Env, corsHeaders: Record<string, string>, config: typeof CONFIG) {
 	try {
 		const formData = await request.formData();
 		const id = crypto.randomUUID();
@@ -231,7 +240,7 @@ async function handleSubmit(request: Request, env: Env, corsHeaders: Record<stri
 
 		// Basic validation
 		if (!name || !message || !serviceType) {
-			return new Response(getErrorHTML('Name, service type, and message are required'), {
+			return new Response(getErrorHTML('Name, service type, and message are required', config), {
 				status: 400,
 				headers: { 'Content-Type': 'text/html', ...corsHeaders }
 			});
@@ -256,36 +265,51 @@ async function handleSubmit(request: Request, env: Env, corsHeaders: Record<stri
 		};
 
 		// Send email notification asynchronously (doesn't block response)
-		if (env.EMAIL_SENDER && env.ADMIN_EMAIL) {
+		if (config.features.enableEmailNotifications && env.EMAIL_SENDER && env.ADMIN_EMAIL) {
 			console.log("Reaching sendAdminNotification");
 			await sendAdminNotification(env, submission);
 			console.log("sendAdminNotification completed");
 		} else {
-			console.log("EMAIL_SENDER or ADMIN_EMAIL not configured");
+			console.log("EMAIL_SENDER or ADMIN_EMAIL not configured, or email notifications disabled");
 		}
 
-		return new Response(getSuccessHTML(), {
+		return new Response(getSuccessHTML(config), {
 			headers: { 'Content-Type': 'text/html', ...corsHeaders }
 		});
 	} catch (error) {
 		console.error('Submit error:', error);
-		return new Response(getErrorHTML('Database error occurred'), {
+		return new Response(getErrorHTML('Database error occurred', config), {
 			status: 500,
 			headers: { 'Content-Type': 'text/html', ...corsHeaders }
 		});
 	}
 }
 
-async function handleAdmin(request: Request, env: Env, corsHeaders: Record<string, string>) {
+async function handleAdmin(request: Request, env: Env, corsHeaders: Record<string, string>, config: typeof CONFIG) {
 	try {
 		// Extract user identity from Cloudflare Access token
 		const user = extractUserFromAccessToken(request);
 		
 		if (!user) {
 			console.warn('Missing Cf-Access-Jwt-Assertion header');
-			// Still allow access but without user identity
+			// If admin auth is enabled and no Cloudflare Access, deny access
+			if (config.features.enableAdminAuth && !config.features.enableCloudflareAccess) {
+				return new Response('Unauthorized - Admin access required', {
+					status: 401,
+					headers: corsHeaders
+				});
+			}
 		} else {
 			console.log(`Admin access: ${user.email}`);
+			// Check if user email is in allowed list (if not using Cloudflare Access)
+			if (config.features.enableAdminAuth && !config.features.enableCloudflareAccess) {
+				if (!config.security.allowedAdminEmails.includes(user.email)) {
+					return new Response('Unauthorized - Email not in admin list', {
+						status: 403,
+						headers: corsHeaders
+					});
+				}
+			}
 		}
 
 		const { results } = await env.DB.prepare(`
@@ -293,7 +317,7 @@ async function handleAdmin(request: Request, env: Env, corsHeaders: Record<strin
 			ORDER BY created_at DESC
 		`).all();
 
-		return new Response(getAdminHTML(results, user), {
+		return new Response(getAdminHTML(results, user, config), {
 			headers: { 'Content-Type': 'text/html', ...corsHeaders }
 		});
 	} catch (error) {
@@ -305,7 +329,7 @@ async function handleAdmin(request: Request, env: Env, corsHeaders: Record<strin
 	}
 }
 
-async function handleStatusUpdate(request: Request, env: Env, corsHeaders: Record<string, string>) {
+async function handleStatusUpdate(request: Request, env: Env, corsHeaders: Record<string, string>, config: typeof CONFIG) {
 	try {
 		// Extract user identity from Cloudflare Access token
 		const user = extractUserFromAccessToken(request);
@@ -326,8 +350,8 @@ async function handleStatusUpdate(request: Request, env: Env, corsHeaders: Recor
 			});
 		}
 
-		// Validate status values
-		const validStatuses = ['new', 'in_progress', 'resolved', 'cancelled'];
+		// Validate status values using config
+		const validStatuses = config.admin.statusOptions.map(option => option.value);
 		if (!validStatuses.includes(status)) {
 			return new Response('Invalid status value', {
 				status: 400,
@@ -357,229 +381,615 @@ async function handleStatusUpdate(request: Request, env: Env, corsHeaders: Recor
 	}
 }
 
-function getContactFormHTML(): string {
+/**
+ * Generate CSS custom properties from theme configuration
+ */
+function generateThemeCSS(config: typeof CONFIG): string {
+	const colors = config.styling.colors;
+	const effects = config.styling.effects;
+	
+	return `
+		:root {
+			/* Colors */
+			--color-primary: ${colors.primary};
+			--color-primary-hover: ${colors.primaryHover};
+			--color-primary-light: ${colors.primaryLight};
+			--color-primary-bg: ${colors.primaryBg};
+			--color-accent: ${colors.accent};
+			--color-accent-hover: ${colors.accentHover};
+			--color-accent-light: ${colors.accentLight};
+			--color-accent-dark: ${colors.accentDark};
+			--color-success: ${colors.success};
+			--color-success-hover: ${colors.successHover};
+			--color-error: ${colors.error};
+			--color-error-bg: ${colors.errorBg};
+			--color-warning: ${colors.warning};
+			--color-warning-bg: ${colors.warningBg};
+			--color-text: ${colors.text};
+			--color-text-light: ${colors.textLight};
+			--color-text-inverse: ${colors.textInverse};
+			--color-background: ${colors.background};
+			--color-background-secondary: ${colors.backgroundSecondary};
+			--color-background-dark: ${colors.backgroundDark};
+			--color-surface: ${colors.surface};
+			--color-surface-teal: ${colors.surfaceTeal};
+			--color-surface-gold: ${colors.surfaceGold};
+			--color-border: ${colors.border};
+			--color-border-teal: ${colors.borderTeal};
+			--color-border-gold: ${colors.borderGold};
+			
+			/* Gradients */
+			--gradient-primary: ${colors.gradientPrimary};
+			--gradient-accent: ${colors.gradientAccent};
+			--gradient-dark: ${colors.gradientDark};
+			--gradient-teal-gold: ${colors.gradientTealGold};
+			
+			/* Shadows */
+			--shadow-teal: ${colors.shadowTeal};
+			--shadow-gold: ${colors.shadowGold};
+			--shadow-dark: ${colors.shadowDark};
+			
+			/* Effects */
+			--border-radius: ${effects.borderRadius};
+			--border-radius-large: ${effects.borderRadiusLarge};
+			--border-radius-small: ${effects.borderRadiusSmall};
+			--box-shadow: ${effects.boxShadow};
+			--box-shadow-large: ${effects.boxShadowLarge};
+			--transition: ${effects.transition};
+			
+			/* Fonts */
+			--font-primary: ${config.styling.fonts.primary};
+		}
+	`.trim();
+}
+
+function getContactFormHTML(config: typeof CONFIG): string {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Your Company - Contact Us</title>
+	<title>${config.company.name} - ${config.contactForm.title}</title>
 	<style>
-		* { box-sizing: border-box; }
+		${generateThemeCSS(config)}
+		
+		* { 
+			box-sizing: border-box; 
+		}
+		
 		body { 
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			font-family: var(--font-primary);
 			max-width: 600px; 
 			margin: 50px auto; 
 			padding: 20px;
-			background: #f8f9fa;
+			background: var(--gradient-primary);
+			min-height: 100vh;
+			background-attachment: fixed;
 		}
+		
 		.container {
-			background: white;
+			background: var(--color-surface);
 			padding: 40px;
-			border-radius: 8px;
-			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			border-radius: var(--border-radius-large);
+			box-shadow: var(--box-shadow-large);
+			border: 1px solid var(--color-border-teal);
+			backdrop-filter: blur(10px);
+			position: relative;
+			overflow: hidden;
 		}
+		
+		.container::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 4px;
+			background: var(--gradient-accent);
+			border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+		}
+		
 		h1 { 
-			color: #2c3e50; 
+			color: var(--color-text); 
 			margin-bottom: 10px;
+			font-size: 2rem;
+			font-weight: 700;
+			text-shadow: 0 2px 4px var(--shadow-teal);
 		}
+		
 		.subtitle {
-			color: #7f8c8d;
+			color: var(--color-text-light);
 			margin-bottom: 30px;
+			font-size: 1.1rem;
 		}
+		
+		label {
+			font-weight: 600;
+			color: var(--color-text);
+			display: block;
+			margin-bottom: 8px;
+			font-size: 0.95rem;
+		}
+		
 		input, textarea, select { 
 			width: 100%; 
-			padding: 12px; 
-			margin: 8px 0 16px 0;
-			border: 2px solid #e0e0e0;
-			border-radius: 4px;
+			padding: 15px; 
+			margin: 0 0 20px 0;
+			border: 2px solid var(--color-border);
+			border-radius: var(--border-radius);
 			font-size: 16px;
+			font-family: var(--font-primary);
+			transition: var(--transition);
+			background: var(--color-surface-teal);
 		}
+		
 		input:focus, textarea:focus, select:focus {
-			border-color: #3498db;
+			border-color: var(--color-primary);
 			outline: none;
+			box-shadow: 0 0 0 3px var(--shadow-teal);
+			background: var(--color-surface);
+			transform: translateY(-1px);
 		}
+		
+		input:hover, textarea:hover, select:hover {
+			border-color: var(--color-primary-light);
+		}
+		
 		button { 
-			background: #3498db; 
-			color: white; 
-			padding: 15px 30px; 
+			background: var(--gradient-teal-gold);
+			color: var(--color-text-inverse); 
+			padding: 18px 30px; 
 			border: none; 
-			border-radius: 4px;
+			border-radius: var(--border-radius);
 			cursor: pointer;
-			font-size: 16px;
+			font-size: 18px;
+			font-weight: 600;
 			width: 100%;
+			transition: var(--transition);
+			box-shadow: var(--box-shadow);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
 		}
+		
 		button:hover {
-			background: #2980b9;
+			transform: translateY(-2px);
+			box-shadow: var(--box-shadow-large);
 		}
+		
+		button:active {
+			transform: translateY(0);
+		}
+		
 		.required {
-			color: #e74c3c;
+			color: var(--color-accent);
+			font-weight: bold;
 		}
-		label {
-			font-weight: 500;
-			color: #2c3e50;
+		
+		.form-group {
+			margin-bottom: 24px;
+		}
+		
+		.response-message {
+			margin-top: 30px; 
+			padding: 16px;
+			font-size: 14px; 
+			color: var(--color-text-light); 
+			text-align: center;
+			background: var(--color-surface-gold);
+			border-radius: var(--border-radius);
+			border-left: 4px solid var(--color-accent);
+		}
+		
+		/* Mobile optimizations for Windows/Chrome/Firefox priority */
+		@media (max-width: 768px) {
+			body {
+				margin: 20px auto;
+				padding: 15px;
+			}
+			
+			.container {
+				padding: 30px 20px;
+			}
+			
+			h1 {
+				font-size: 1.75rem;
+			}
+			
+			input, textarea, select {
+				padding: 12px;
+				font-size: 16px; /* Prevents zoom on iOS */
+			}
+			
+			button {
+				padding: 16px 24px;
+				font-size: 16px;
+			}
+		}
+		
+		/* Cross-browser compatibility */
+		input[type="email"], input[type="tel"] {
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+		}
+		
+		select {
+			-webkit-appearance: none;
+			-moz-appearance: none;
+			appearance: none;
+			background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230f766e' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+			background-repeat: no-repeat;
+			background-position: right 12px center;
+			background-size: 16px;
+			padding-right: 40px;
 		}
 	</style>
 </head>
 <body>
 	<div class="container">
-		<h1>🔥 Your Company</h1>
-		<p class="subtitle">Professional Services - Get in touch with us</p>
+		<h1>${config.company.emoji} ${config.company.name}</h1>
+		<p class="subtitle">${config.company.tagline}</p>
 		
 		<form method="POST" action="/submit">
-			<label for="name">Name <span class="required">*</span></label>
-			<input name="name" id="name" placeholder="Your full name" required>
+			<div class="form-group">
+				<label for="name">Name <span class="required">*</span></label>
+				<input name="name" id="name" placeholder="Your full name" required>
+			</div>
 			
-			<label for="email">Email</label>
-			<input name="email" id="email" placeholder="your@email.com" type="email">
+			<div class="form-group">
+				<label for="email">Email</label>
+				<input name="email" id="email" placeholder="your@email.com" type="email">
+			</div>
 			
-			<label for="phone">Phone</label>
-			<input name="phone" id="phone" placeholder="(555) 123-4567" type="tel">
+			<div class="form-group">
+				<label for="phone">Phone</label>
+				<input name="phone" id="phone" placeholder="(555) 123-4567" type="tel">
+			</div>
 			
-			<label for="service_type">Service Type <span class="required">*</span></label>
-			<select name="service_type" id="service_type" required>
-				<option value="">Select a service...</option>
-				<option value="Repair - Plumbing">Repair - Plumbing</option>
-				<option value="Repair - Electrical">Repair - Electrical</option>
-				<option value="Repair - HVAC">Repair - HVAC</option>
-				<option value="Auto Repair">Auto Repair</option>
-				<option value="Logistics & Operations">Logistics & Operations</option>
-				<option value="AI Tools & Infrastructure">AI Tools & Infrastructure</option>
-				<option value="Emergency Response">Emergency Response</option>
-				<option value="Other">Other</option>
-			</select>
+			<div class="form-group">
+				<label for="service_type">Service Type <span class="required">*</span></label>
+				<select name="service_type" id="service_type" required>
+					<option value="">Select a service...</option>
+					${config.contactForm.serviceTypes.map(type => `<option value="${type}">${type}</option>`).join('')}
+				</select>
+			</div>
 			
-			<label for="message">Message <span class="required">*</span></label>
-			<textarea name="message" id="message" placeholder="Describe how we can help you..." rows="5" required></textarea>
+			<div class="form-group">
+				<label for="message">Message <span class="required">*</span></label>
+				<textarea name="message" id="message" placeholder="Describe how we can help you..." rows="5" required></textarea>
+			</div>
 			
-			<button type="submit">Send Message 🚀</button>
+			<button type="submit">${config.contactForm.submitButtonText}</button>
 		</form>
 		
-		<p style="margin-top: 30px; font-size: 14px; color: #7f8c8d; text-align: center;">
-			We'll get back to you within 24 hours
-		</p>
+		<div class="response-message">
+			${config.contactForm.responseTimeMessage}
+		</div>
 	</div>
 </body>
 </html>`;
 }
 
-function getSuccessHTML(): string {
+function getSuccessHTML(config: typeof CONFIG): string {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Message Sent - Your Company</title>
+	<title>Message Sent - ${config.company.name}</title>
 	<style>
-		* { box-sizing: border-box; }
+		${generateThemeCSS(config)}
+		
+		* { 
+			box-sizing: border-box; 
+		}
+		
 		body { 
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			font-family: var(--font-primary);
 			max-width: 600px; 
 			margin: 50px auto; 
 			padding: 20px;
-			background: #f8f9fa;
+			background: var(--gradient-primary);
+			min-height: 100vh;
+			background-attachment: fixed;
 		}
+		
 		.container {
-			background: white;
-			padding: 40px;
-			border-radius: 8px;
-			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			background: var(--color-surface);
+			padding: 50px 40px;
+			border-radius: var(--border-radius-large);
+			box-shadow: var(--box-shadow-large);
+			border: 1px solid var(--color-border-teal);
 			text-align: center;
+			position: relative;
+			overflow: hidden;
 		}
-		h1 { color: #27ae60; margin-bottom: 20px; }
-		.success-icon { font-size: 64px; margin-bottom: 20px; }
+		
+		.container::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 4px;
+			background: var(--gradient-accent);
+			border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+		}
+		
+		.success-icon { 
+			font-size: 80px; 
+			margin-bottom: 24px;
+			animation: successPulse 2s ease-in-out infinite;
+		}
+		
+		@keyframes successPulse {
+			0%, 100% { transform: scale(1); }
+			50% { transform: scale(1.1); }
+		}
+		
+		h1 { 
+			color: var(--color-success); 
+			margin-bottom: 24px;
+			font-size: 2.2rem;
+			font-weight: 700;
+			text-shadow: 0 2px 4px var(--shadow-teal);
+		}
+		
+		p {
+			color: var(--color-text);
+			font-size: 1.1rem;
+			line-height: 1.6;
+			margin-bottom: 16px;
+		}
+		
+		.highlight {
+			color: var(--color-primary);
+			font-weight: 600;
+		}
+		
 		a { 
 			display: inline-block;
-			background: #3498db; 
-			color: white; 
-			padding: 12px 24px; 
+			background: var(--gradient-teal-gold); 
+			color: var(--color-text-inverse); 
+			padding: 16px 32px; 
 			text-decoration: none;
-			border-radius: 4px;
-			margin-top: 20px;
+			border-radius: var(--border-radius);
+			margin-top: 30px;
+			font-weight: 600;
+			font-size: 1.1rem;
+			transition: var(--transition);
+			box-shadow: var(--box-shadow);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
 		}
-		a:hover { background: #2980b9; }
+		
+		a:hover { 
+			transform: translateY(-2px);
+			box-shadow: var(--box-shadow-large);
+		}
+		
+		a:active {
+			transform: translateY(0);
+		}
+		
+		.celebration {
+			background: var(--color-surface-gold);
+			padding: 20px;
+			border-radius: var(--border-radius);
+			margin: 24px 0;
+			border-left: 4px solid var(--color-accent);
+		}
+		
+		/* Mobile optimizations */
+		@media (max-width: 768px) {
+			body {
+				margin: 20px auto;
+				padding: 15px;
+			}
+			
+			.container {
+				padding: 40px 25px;
+			}
+			
+			h1 {
+				font-size: 1.8rem;
+			}
+			
+			.success-icon {
+				font-size: 64px;
+			}
+			
+			a {
+				padding: 14px 24px;
+				font-size: 1rem;
+			}
+		}
 	</style>
 </head>
 <body>
 	<div class="container">
 		<div class="success-icon">✅</div>
 		<h1>Message Sent Successfully!</h1>
-		<p>Thank you for contacting us. We've received your message and will get back to you within 24 hours.</p>
-		<p>We appreciate your business!</p>
+		
+		<div class="celebration">
+			<p>Thank you for contacting <span class="highlight">${config.company.name}</span>. We've received your message and will get back to you within 24 hours.</p>
+			<p>We appreciate your business!</p>
+		</div>
+		
 		<a href="/">← Send Another Message</a>
 	</div>
 </body>
 </html>`;
 }
 
-function getErrorHTML(error: string): string {
+function getErrorHTML(error: string, config: typeof CONFIG): string {
 	return `<!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Error - Your Company</title>
+	<title>Error - ${config.company.name}</title>
 	<style>
-		* { box-sizing: border-box; }
+		${generateThemeCSS(config)}
+		
+		* { 
+			box-sizing: border-box; 
+		}
+		
 		body { 
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			font-family: var(--font-primary);
 			max-width: 600px; 
 			margin: 50px auto; 
 			padding: 20px;
-			background: #f8f9fa;
+			background: var(--gradient-primary);
+			min-height: 100vh;
+			background-attachment: fixed;
 		}
+		
 		.container {
-			background: white;
-			padding: 40px;
-			border-radius: 8px;
-			box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+			background: var(--color-surface);
+			padding: 50px 40px;
+			border-radius: var(--border-radius-large);
+			box-shadow: var(--box-shadow-large);
+			border: 1px solid var(--color-border-teal);
 			text-align: center;
+			position: relative;
+			overflow: hidden;
 		}
-		h1 { color: #e74c3c; margin-bottom: 20px; }
-		.error-icon { font-size: 64px; margin-bottom: 20px; }
+		
+		.container::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 4px;
+			background: linear-gradient(135deg, var(--color-error) 0%, var(--color-warning) 100%);
+			border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
+		}
+		
+		.error-icon { 
+			font-size: 80px; 
+			margin-bottom: 24px;
+			animation: errorShake 0.5s ease-in-out;
+		}
+		
+		@keyframes errorShake {
+			0%, 100% { transform: translateX(0); }
+			25% { transform: translateX(-5px); }
+			75% { transform: translateX(5px); }
+		}
+		
+		h1 { 
+			color: var(--color-error); 
+			margin-bottom: 24px;
+			font-size: 2.2rem;
+			font-weight: 700;
+			text-shadow: 0 2px 4px var(--shadow-teal);
+		}
+		
+		.error-message {
+			background: var(--color-error-bg);
+			padding: 20px;
+			border-radius: var(--border-radius);
+			margin: 24px 0;
+			border-left: 4px solid var(--color-error);
+		}
+		
+		p {
+			color: var(--color-text);
+			font-size: 1.1rem;
+			line-height: 1.6;
+			margin-bottom: 16px;
+		}
+		
 		a { 
 			display: inline-block;
-			background: #3498db; 
-			color: white; 
-			padding: 12px 24px; 
+			background: var(--gradient-teal-gold); 
+			color: var(--color-text-inverse); 
+			padding: 16px 32px; 
 			text-decoration: none;
-			border-radius: 4px;
-			margin-top: 20px;
+			border-radius: var(--border-radius);
+			margin-top: 30px;
+			font-weight: 600;
+			font-size: 1.1rem;
+			transition: var(--transition);
+			box-shadow: var(--box-shadow);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
 		}
-		a:hover { background: #2980b9; }
+		
+		a:hover { 
+			transform: translateY(-2px);
+			box-shadow: var(--box-shadow-large);
+		}
+		
+		a:active {
+			transform: translateY(0);
+		}
+		
+		/* Mobile optimizations */
+		@media (max-width: 768px) {
+			body {
+				margin: 20px auto;
+				padding: 15px;
+			}
+			
+			.container {
+				padding: 40px 25px;
+			}
+			
+			h1 {
+				font-size: 1.8rem;
+			}
+			
+			.error-icon {
+				font-size: 64px;
+			}
+			
+			a {
+				padding: 14px 24px;
+				font-size: 1rem;
+			}
+		}
 	</style>
 </head>
 <body>
 	<div class="container">
 		<div class="error-icon">❌</div>
 		<h1>Oops! Something went wrong</h1>
-		<p>${error}</p>
+		
+		<div class="error-message">
+			<p>${error}</p>
+		</div>
+		
 		<a href="/">← Try Again</a>
 	</div>
 </body>
 </html>`;
 }
 
-function getAdminHTML(submissions: any[], user: CloudflareAccessUser | null = null): string {
+function getAdminHTML(submissions: any[], user: CloudflareAccessUser | null = null, config: typeof CONFIG): string {
 	const submissionRows = submissions.map(sub => `
-		<tr>
-			<td>${sub.name}</td>
-			<td>${sub.email || 'N/A'}</td>
-			<td>${sub.phone || 'N/A'}</td>
-			<td>${sub.service_type}</td>
-			<td title="${sub.message}">${sub.message.substring(0, 50)}${sub.message.length > 50 ? '...' : ''}</td>
-			<td>
-				<form method="POST" action="/admin/update" style="display: inline;">
+		<tr class="submission-row">
+			<td class="name-cell">${sub.name}</td>
+			<td class="email-cell">${sub.email || '<span class="no-data">N/A</span>'}</td>
+			<td class="phone-cell">${sub.phone || '<span class="no-data">N/A</span>'}</td>
+			<td class="service-cell"><span class="service-badge">${sub.service_type}</span></td>
+			<td class="message-cell" title="${sub.message}">
+				<div class="message-preview">${sub.message.substring(0, 50)}${sub.message.length > 50 ? '...' : ''}</div>
+			</td>
+			<td class="status-cell">
+				<form method="POST" action="/admin/update" class="status-form">
 					<input type="hidden" name="id" value="${sub.id}">
-					<select name="status" onchange="this.form.submit()">
-						<option value="new" ${sub.status === 'new' ? 'selected' : ''}>New</option>
-						<option value="in_progress" ${sub.status === 'in_progress' ? 'selected' : ''}>In Progress</option>
-						<option value="resolved" ${sub.status === 'resolved' ? 'selected' : ''}>Resolved</option>
-						<option value="cancelled" ${sub.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+					<select name="status" class="status-select ${sub.status}" onchange="this.form.submit()">
+						${config.admin.statusOptions.map(option =>
+							`<option value="${option.value}" ${sub.status === option.value ? 'selected' : ''}>${option.label}</option>`
+						).join('')}
 					</select>
 				</form>
 			</td>
-			<td>${new Date(sub.created_at).toLocaleDateString()}</td>
+			<td class="date-cell">${new Date(sub.created_at).toLocaleDateString()}</td>
 		</tr>
 	`).join('');
 
@@ -588,81 +998,308 @@ function getAdminHTML(submissions: any[], user: CloudflareAccessUser | null = nu
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Admin Panel - Your Company</title>
+	<title>${config.admin.title} - ${config.company.name}</title>
 	<style>
-		* { box-sizing: border-box; }
+		${generateThemeCSS(config)}
+		
+		* { 
+			box-sizing: border-box; 
+		}
+		
 		body { 
-			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+			font-family: var(--font-primary);
 			margin: 20px;
-			background: #f8f9fa;
+			background: var(--gradient-dark);
+			min-height: 100vh;
+			background-attachment: fixed;
 		}
+		
 		.header {
-			background: white;
-			padding: 20px;
-			border-radius: 8px;
-			margin-bottom: 20px;
-			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+			background: var(--color-surface);
+			padding: 30px;
+			border-radius: var(--border-radius-large);
+			margin-bottom: 24px;
+			box-shadow: var(--box-shadow-large);
+			border: 1px solid var(--color-border-teal);
+			position: relative;
+			overflow: hidden;
 		}
-		h1 { 
-			color: #2c3e50; 
-			margin: 0;
+		
+		.header::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 6px;
+			background: var(--gradient-teal-gold);
+			border-radius: var(--border-radius-large) var(--border-radius-large) 0 0;
 		}
-		.stats {
+		
+		.header-top {
 			display: flex;
-			gap: 20px;
-			margin-top: 15px;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 20px;
 		}
+		
+		h1 { 
+			color: var(--color-text); 
+			margin: 0;
+			font-size: 2rem;
+			font-weight: 700;
+			text-shadow: 0 2px 4px var(--shadow-teal);
+		}
+		
+		.user-info {
+			background: var(--gradient-primary);
+			color: var(--color-text-inverse);
+			padding: 12px 20px;
+			border-radius: var(--border-radius);
+			font-size: 14px;
+			font-weight: 600;
+			box-shadow: var(--box-shadow);
+		}
+		
+		.stats {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+			gap: 16px;
+			margin-bottom: 20px;
+		}
+		
 		.stat {
-			background: #3498db;
-			color: white;
-			padding: 10px 15px;
-			border-radius: 4px;
-			font-weight: bold;
+			background: var(--gradient-primary);
+			color: var(--color-text-inverse);
+			padding: 16px 20px;
+			border-radius: var(--border-radius);
+			font-weight: 600;
+			text-align: center;
+			box-shadow: var(--box-shadow);
+			transition: var(--transition);
 		}
+		
+		.stat:hover {
+			transform: translateY(-2px);
+			box-shadow: var(--box-shadow-large);
+		}
+		
+		.stat-number {
+			font-size: 1.5rem;
+			font-weight: 700;
+			display: block;
+		}
+		
+		.refresh-btn {
+			background: var(--gradient-accent);
+			color: var(--color-text-inverse);
+			padding: 14px 24px;
+			text-decoration: none;
+			border-radius: var(--border-radius);
+			display: inline-block;
+			font-weight: 600;
+			transition: var(--transition);
+			box-shadow: var(--box-shadow);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		
+		.refresh-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: var(--box-shadow-large);
+		}
+		
+		.table-container {
+			background: var(--color-surface);
+			border-radius: var(--border-radius-large);
+			overflow: hidden;
+			box-shadow: var(--box-shadow-large);
+			border: 1px solid var(--color-border-teal);
+		}
+		
 		table { 
 			width: 100%; 
 			border-collapse: collapse; 
-			background: white;
-			border-radius: 8px;
-			overflow: hidden;
-			box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 		}
+		
 		th, td { 
-			padding: 12px; 
+			padding: 16px 12px; 
 			text-align: left; 
-			border-bottom: 1px solid #e0e0e0;
 		}
+		
 		th { 
-			background: #34495e; 
-			color: white;
+			background: var(--gradient-dark); 
+			color: var(--color-text-inverse);
+			font-weight: 600;
+			font-size: 0.95rem;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+		}
+		
+		.submission-row {
+			border-bottom: 1px solid var(--color-border);
+			transition: var(--transition);
+		}
+		
+		.submission-row:nth-child(even) { 
+			background: var(--color-surface-teal); 
+		}
+		
+		.submission-row:hover {
+			background: var(--color-surface-gold);
+			transform: scale(1.01);
+		}
+		
+		.name-cell {
+			font-weight: 600;
+			color: var(--color-text);
+		}
+		
+		.service-badge {
+			background: var(--gradient-primary);
+			color: var(--color-text-inverse);
+			padding: 4px 12px;
+			border-radius: 20px;
+			font-size: 0.85rem;
 			font-weight: 600;
 		}
-		tr:nth-child(even) { 
-			background: #f8f9fa; 
+		
+		.message-preview {
+			color: var(--color-text-light);
+			font-style: italic;
 		}
-		tr:hover {
-			background: #e8f4fd;
+		
+		.no-data {
+			color: var(--color-text-light);
+			font-style: italic;
 		}
-		select {
-			padding: 6px;
-			border: 1px solid #ddd;
-			border-radius: 3px;
-		}
-		.new { color: #e67e22; font-weight: bold; }
-		.in_progress { color: #3498db; font-weight: bold; }
-		.resolved { color: #27ae60; font-weight: bold; }
-		.cancelled { color: #e74c3c; font-weight: bold; }
-		.refresh-btn {
-			background: #27ae60;
-			color: white;
-			padding: 10px 20px;
-			text-decoration: none;
-			border-radius: 4px;
+		
+		.status-form {
 			display: inline-block;
-			margin-top: 10px;
 		}
-		.refresh-btn:hover {
-			background: #219a52;
+		
+		.status-select {
+			padding: 8px 12px;
+			border: 2px solid var(--color-border);
+			border-radius: var(--border-radius);
+			font-weight: 600;
+			transition: var(--transition);
+			background: var(--color-surface);
+		}
+		
+		.status-select:hover {
+			border-color: var(--color-primary);
+		}
+		
+		.status-select.new { 
+			background: var(--color-warning-bg);
+			border-color: var(--color-warning);
+			color: var(--color-warning);
+		}
+		
+		.status-select.in_progress { 
+			background: var(--color-surface-teal);
+			border-color: var(--color-primary);
+			color: var(--color-primary);
+		}
+		
+		.status-select.resolved { 
+			background: var(--color-surface);
+			border-color: var(--color-success);
+			color: var(--color-success);
+		}
+		
+		.status-select.cancelled { 
+			background: var(--color-error-bg);
+			border-color: var(--color-error);
+			color: var(--color-error);
+		}
+		
+		.empty-state {
+			text-align: center;
+			padding: 60px 40px;
+			background: var(--color-surface);
+			margin-top: 24px;
+			border-radius: var(--border-radius-large);
+			box-shadow: var(--box-shadow-large);
+			border: 1px solid var(--color-border-teal);
+		}
+		
+		.empty-state h3 {
+			color: var(--color-text);
+			font-size: 1.5rem;
+			margin-bottom: 16px;
+		}
+		
+		.empty-state p {
+			color: var(--color-text-light);
+			margin-bottom: 24px;
+		}
+		
+		.empty-state a {
+			background: var(--gradient-teal-gold);
+			color: var(--color-text-inverse);
+			padding: 14px 28px;
+			text-decoration: none;
+			border-radius: var(--border-radius);
+			font-weight: 600;
+			transition: var(--transition);
+			box-shadow: var(--box-shadow);
+		}
+		
+		.empty-state a:hover {
+			transform: translateY(-2px);
+			box-shadow: var(--box-shadow-large);
+		}
+		
+		/* Mobile optimizations */
+		@media (max-width: 1024px) {
+			body {
+				margin: 15px;
+			}
+			
+			.header {
+				padding: 20px;
+			}
+			
+			.header-top {
+				flex-direction: column;
+				gap: 16px;
+				align-items: stretch;
+			}
+			
+			h1 {
+				font-size: 1.5rem;
+				text-align: center;
+			}
+			
+			.stats {
+				grid-template-columns: repeat(2, 1fr);
+			}
+			
+			.table-container {
+				overflow-x: auto;
+			}
+			
+			table {
+				min-width: 800px;
+			}
+			
+			th, td {
+				padding: 12px 8px;
+				font-size: 0.9rem;
+			}
+		}
+		
+		@media (max-width: 768px) {
+			.stats {
+				grid-template-columns: 1fr;
+			}
+			
+			th, td {
+				padding: 10px 6px;
+				font-size: 0.85rem;
+			}
 		}
 		.user-info {
 			background: #34495e;
@@ -676,41 +1313,57 @@ function getAdminHTML(submissions: any[], user: CloudflareAccessUser | null = nu
 </head>
 <body>
 	<div class="header">
-		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-			<h1 style="margin: 0;">🔥 Your Company - Admin Panel</h1>
+		<div class="header-top">
+			<h1>${config.company.emoji} ${config.company.name} - ${config.admin.title}</h1>
 			${user ? `<div class="user-info">👤 ${user.email}</div>` : ''}
 		</div>
+		
 		<div class="stats">
-			<div class="stat">Total: ${submissions.length}</div>
-			<div class="stat">New: ${submissions.filter(s => s.status === 'new').length}</div>
-			<div class="stat">Active: ${submissions.filter(s => s.status === 'in_progress').length}</div>
-			<div class="stat">Resolved: ${submissions.filter(s => s.status === 'resolved').length}</div>
+			<div class="stat">
+				<span class="stat-number">${submissions.length}</span>
+				Total Submissions
+			</div>
+			<div class="stat">
+				<span class="stat-number">${submissions.filter(s => s.status === 'new').length}</span>
+				New
+			</div>
+			<div class="stat">
+				<span class="stat-number">${submissions.filter(s => s.status === 'in_progress').length}</span>
+				In Progress
+			</div>
+			<div class="stat">
+				<span class="stat-number">${submissions.filter(s => s.status === 'resolved').length}</span>
+				Resolved
+			</div>
 		</div>
-		<a href="/admin" class="refresh-btn">🔄 Refresh</a>
+		
+		<a href="/admin" class="refresh-btn">🔄 Refresh Data</a>
 	</div>
 
-	<table>
-		<thead>
-			<tr>
-				<th>Name</th>
-				<th>Email</th>
-				<th>Phone</th>
-				<th>Service</th>
-				<th>Message</th>
-				<th>Status</th>
-				<th>Date</th>
-			</tr>
-		</thead>
-		<tbody>
-			${submissionRows}
-		</tbody>
-	</table>
+	<div class="table-container">
+		<table>
+			<thead>
+				<tr>
+					<th>${config.admin.columns.name}</th>
+					<th>${config.admin.columns.email}</th>
+					<th>${config.admin.columns.phone}</th>
+					<th>${config.admin.columns.service}</th>
+					<th>${config.admin.columns.message}</th>
+					<th>${config.admin.columns.status}</th>
+					<th>${config.admin.columns.date}</th>
+				</tr>
+			</thead>
+			<tbody>
+				${submissionRows}
+			</tbody>
+		</table>
+	</div>
 
 	${submissions.length === 0 ? `
-		<div style="text-align: center; padding: 40px; background: white; margin-top: 20px; border-radius: 8px;">
-			<h3>No submissions yet</h3>
-			<p>Waiting for the first contact form submission...</p>
-			<a href="/" style="background: #3498db; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Test Contact Form</a>
+		<div class="empty-state">
+			<h3>${config.admin.emptyState.title}</h3>
+			<p>${config.admin.emptyState.message}</p>
+			<a href="/">${config.admin.emptyState.buttonText}</a>
 		</div>
 	` : ''}
 </body>
