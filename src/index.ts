@@ -7,13 +7,23 @@ import { EmailMessage } from "cloudflare:email";
 import { createMimeMessage } from "mimetext";
 
 interface FormSubmission {
-  id: string;
-  name: string;
-  email?: string;
-  phone?: string;
-  service_type: string;
-  message: string;
-  timestamp: string;
+	id: string;
+	name: string;
+	email?: string;
+	phone?: string;
+	service_type: string;
+	message: string;
+	timestamp: string;
+}
+
+interface CloudflareAccessUser {
+	email: string;
+	name?: string;
+	sub?: string;
+	aud?: string[];
+	iss?: string;
+	iat?: number;
+	exp?: number;
 }
 
 interface Env {
@@ -23,6 +33,61 @@ interface Env {
 	ADMIN_EMAIL: string;      // New
 	ENVIRONMENT?: string;     // New
 }
+
+/**
+ * Extract user identity from Cloudflare Access JWT token
+ * @param request - The incoming request
+ * @returns CloudflareAccessUser object or null if token is missing/invalid
+ */
+function extractUserFromAccessToken(request: Request): CloudflareAccessUser | null {
+  try {
+    const userJWT = request.headers.get('Cf-Access-Jwt-Assertion');
+    if (!userJWT) {
+      return null;
+    }
+
+    // JWT structure: header.payload.signature
+    const parts = userJWT.split('.');
+    if (parts.length !== 3) {
+      console.error('Invalid JWT token format');
+      return null;
+    }
+
+    // Decode the payload (base64url decode)
+    const payload = parts[1];
+    // Convert base64url to base64
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+    
+    const decodedPayload = JSON.parse(atob(paddedBase64));
+    
+    // Validate token expiration
+    if (decodedPayload.exp && decodedPayload.exp < Math.floor(Date.now() / 1000)) {
+      console.warn('JWT token expired');
+      return null;
+    }
+    
+    // Validate required fields
+    if (!decodedPayload.email) {
+      console.error('JWT token missing email field');
+      return null;
+    }
+
+    return {
+      email: decodedPayload.email,
+      name: decodedPayload.name,
+      sub: decodedPayload.sub,
+      aud: decodedPayload.aud,
+      iss: decodedPayload.iss,
+      iat: decodedPayload.iat,
+      exp: decodedPayload.exp
+    };
+  } catch (error) {
+    console.error('Error extracting user from Access token:', error);
+    return null;
+  }
+}
+
 
 async function sendAdminNotification(
   env: Env,
@@ -114,34 +179,38 @@ export default {
 		}
 
 		try {
+			let response: Response;
+			
 			// Landing page with contact form
 			if (url.pathname === '/' && request.method === 'GET') {
-				return new Response(getContactFormHTML(), {
+				response = new Response(getContactFormHTML(), {
 					headers: { 'Content-Type': 'text/html', ...corsHeaders }
 				});
 			}
-
 			// Submit contact form
-			if (url.pathname === '/submit' && request.method === 'POST') {
-				return handleSubmit(request, env, corsHeaders);
+			else if (url.pathname === '/submit' && request.method === 'POST') {
+				response = await handleSubmit(request, env, corsHeaders);
 			}
-
 			// Admin panel
-			if (url.pathname === '/admin' && request.method === 'GET') {
-				return handleAdmin(request, env, corsHeaders);
+			else if (url.pathname === '/admin' && request.method === 'GET') {
+				response = await handleAdmin(request, env, corsHeaders);
 			}
-
 			// Update submission status
-			if (url.pathname === '/admin/update' && request.method === 'POST') {
-				return handleStatusUpdate(request, env, corsHeaders);
+			else if (url.pathname === '/admin/update' && request.method === 'POST') {
+				response = await handleStatusUpdate(request, env, corsHeaders);
 			}
-
-			return new Response('Not Found', { status: 404, headers: corsHeaders });
+			// Handle unknown routes
+			else {
+				response = new Response('Not Found', { status: 404, headers: corsHeaders });
+			}
+			
+			return response;
+			
 		} catch (error) {
 			console.error('Worker error:', error);
-			return new Response('Internal Server Error', { 
-				status: 500, 
-				headers: corsHeaders 
+			return new Response('Internal Server Error', {
+				status: 500,
+				headers: corsHeaders
 			});
 		}
 	},
@@ -207,38 +276,67 @@ async function handleSubmit(request: Request, env: Env, corsHeaders: Record<stri
 
 async function handleAdmin(request: Request, env: Env, corsHeaders: Record<string, string>) {
 	try {
+		// Extract user identity from Cloudflare Access token
+		const user = extractUserFromAccessToken(request);
+		
+		if (!user) {
+			console.warn('Missing Cf-Access-Jwt-Assertion header');
+			// Still allow access but without user identity
+		} else {
+			console.log(`Admin access: ${user.email}`);
+		}
+
 		const { results } = await env.DB.prepare(`
-			SELECT * FROM submissions 
+			SELECT * FROM submissions
 			ORDER BY created_at DESC
 		`).all();
 
-		return new Response(getAdminHTML(results), {
+		return new Response(getAdminHTML(results, user), {
 			headers: { 'Content-Type': 'text/html', ...corsHeaders }
 		});
 	} catch (error) {
 		console.error('Admin error:', error);
-		return new Response('Database error', { 
-			status: 500, 
-			headers: corsHeaders 
+		return new Response('Internal Server Error', {
+			status: 500,
+			headers: corsHeaders
 		});
 	}
 }
 
 async function handleStatusUpdate(request: Request, env: Env, corsHeaders: Record<string, string>) {
 	try {
+		// Extract user identity from Cloudflare Access token
+		const user = extractUserFromAccessToken(request);
+		
+		if (!user) {
+			console.warn('Status update without authentication');
+			// Still allow the update for now
+		}
+		
 		const formData = await request.formData();
 		const id = formData.get('id')?.toString();
 		const status = formData.get('status')?.toString();
 
 		if (!id || !status) {
-			return new Response('Missing ID or status', { 
-				status: 400, 
-				headers: corsHeaders 
+			return new Response('Missing ID or status', {
+				status: 400,
+				headers: corsHeaders
 			});
 		}
 
+		// Validate status values
+		const validStatuses = ['new', 'in_progress', 'resolved', 'cancelled'];
+		if (!validStatuses.includes(status)) {
+			return new Response('Invalid status value', {
+				status: 400,
+				headers: corsHeaders
+			});
+		}
+
+		console.log(`Status update: ${id} -> ${status} by ${user?.email || 'unknown'}`);
+
 		await env.DB.prepare(`
-			UPDATE submissions 
+			UPDATE submissions
 			SET status = ?, updated_at = datetime('now')
 			WHERE id = ?
 		`).bind(status, id).run();
@@ -250,9 +348,9 @@ async function handleStatusUpdate(request: Request, env: Env, corsHeaders: Recor
 		});
 	} catch (error) {
 		console.error('Update error:', error);
-		return new Response('Update failed', { 
-			status: 500, 
-			headers: corsHeaders 
+		return new Response('Update failed', {
+			status: 500,
+			headers: corsHeaders
 		});
 	}
 }
@@ -460,7 +558,7 @@ function getErrorHTML(error: string): string {
 </html>`;
 }
 
-function getAdminHTML(submissions: any[]): string {
+function getAdminHTML(submissions: any[], user: CloudflareAccessUser | null = null): string {
 	const submissionRows = submissions.map(sub => `
 		<tr>
 			<td>${sub.name}</td>
@@ -564,11 +662,22 @@ function getAdminHTML(submissions: any[]): string {
 		.refresh-btn:hover {
 			background: #219a52;
 		}
+		.user-info {
+			background: #34495e;
+			color: white;
+			padding: 8px 15px;
+			border-radius: 4px;
+			font-size: 14px;
+			font-weight: 500;
+		}
 	</style>
 </head>
 <body>
 	<div class="header">
-		<h1>🔥 Atlas Firebird - Admin Panel</h1>
+		<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+			<h1 style="margin: 0;">🔥 Atlas Firebird - Admin Panel</h1>
+			${user ? `<div class="user-info">👤 ${user.email}</div>` : ''}
+		</div>
 		<div class="stats">
 			<div class="stat">Total: ${submissions.length}</div>
 			<div class="stat">New: ${submissions.filter(s => s.status === 'new').length}</div>
