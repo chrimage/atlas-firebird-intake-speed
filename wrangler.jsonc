@@ -6,16 +6,21 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "intake-speed",
 	"main": "src/index.ts",
+	"account_id": "42787465cd6e717769c0a5427e266a75",
 	"compatibility_date": "2025-06-28",
 	"compatibility_flags": [
 		"global_fetch_strictly_public"
 	],
-	"assets": {
-		"directory": "./public"
-	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "intake-db",
+			"database_id": "a853ae40-3390-4fe5-b3fb-20606353afd3"
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement

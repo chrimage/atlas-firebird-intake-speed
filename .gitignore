@@ -170,3 +170,6 @@ dist
 
 .dev.vars
 .wrangler/
+
+# Planning documents (internal development docs - in parent directory)
+../.planning/
