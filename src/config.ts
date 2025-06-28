@@ -7,10 +7,13 @@
 export const CONFIG = {
   // Company/Organization Information
   company: {
-    name: "Your Company Name", 
-    tagline: "Professional Services - Get in touch with us",
-    shortName: "Company", // Used in email subjects
-    emoji: "🔥", // Used throughout the UI
+    name: "Atlas Divisions", 
+    tagline: "Solutions That Outlast the Storm",
+    coreMessage: "Mapping Chaos. Building Resilience.",
+    founder: "Captain Harley Miller",
+    primaryEmail: "harley@atlasdivisions.com",
+    shortName: "Atlas Divisions", // Used in email subjects
+    emoji: "🌍", // Used throughout the UI
   },
 
   // Contact Form Configuration
@@ -21,15 +24,12 @@ export const CONFIG = {
     
     // Available service types in the dropdown
     serviceTypes: [
+      "Auto & Home Systems Repair",
+      "Logistics & Adaptive Operations",
+      "AI Tools & Digital Infrastructure",
+      "Emergency & Crisis Response",
       "General Inquiry",
-      "Technical Support",
-      "Sales Question", 
-      "Partnership Opportunity",
-      "Customer Service",
-      "Billing Question",
-      "Feature Request",
-      "Bug Report",
-      "Other"
+      "Partnership Opportunity"
     ],
     
     // Form validation messages
@@ -43,14 +43,14 @@ export const CONFIG = {
 
   // Email Configuration
   email: {
-    subjectPrefix: "New Contact Form", // Will become "New Contact Form: [Service Type] - [Name]"
-    systemName: "Contact Form System", // Used as sender name
+    subjectPrefix: "Atlas Divisions Contact", // Will become "Atlas Divisions Contact: [Service Type] - [Name]"
+    systemName: "Atlas Divisions Contact System", // Used as sender name
     
     // Email templates
     templates: {
       adminNotification: {
-        header: "New Contact Form Submission",
-        footer: "Reply directly to this email to contact the customer."
+        header: "New Atlas Divisions Contact Form Submission",
+        footer: "Solutions That Outlast the Storm - Reply directly to contact the customer."
       }
     }
   },
@@ -89,19 +89,34 @@ export const CONFIG = {
 
   // UI Styling Configuration
   styling: {
-    // Teal-Gold color scheme with dark teal dominant
+    // Atlas Divisions Teal-Gold color scheme
     colors: {
+      // Primary Colors (matching design spec)
+      bgPrimary: "#0a0a0a", // Primary background
+      bgSecondary: "#1a1a1a", // Secondary background
+      textPrimary: "#ffffff", // Primary text
+      textSecondary: "#b8b8b8", // Secondary text
+      
+      // Brand Accent Colors
+      accentGold: "#d4af37", // Primary brand color
+      accentBronze: "#cd7f32", // Secondary brand color
+      accentTeal: "#008080", // Tertiary accent
+      
+      // Functional Colors
+      emergencyRed: "#dc143c", // Emergency service highlighting
+      oceanBlue: "#001122", // Globe ocean color
+      
       // Teal palette (dominant)
-      primary: "#0f766e", // Dark teal
-      primaryHover: "#0d5452", // Darker teal for hover
-      primaryLight: "#14b8a6", // Lighter teal
-      primaryBg: "#134e4a", // Very dark teal for backgrounds
+      primary: "#008080", // Atlas teal
+      primaryHover: "#006666", // Darker teal for hover
+      primaryLight: "#20b2aa", // Lighter teal
+      primaryBg: "#004d4d", // Very dark teal for backgrounds
       
       // Gold palette (accent)
-      accent: "#fbbf24", // Gold accent
-      accentHover: "#f59e0b", // Darker gold hover
-      accentLight: "#fde68a", // Light gold
-      accentDark: "#d97706", // Dark gold
+      accent: "#d4af37", // Atlas gold
+      accentHover: "#b8941f", // Darker gold hover
+      accentLight: "#e6c967", // Light gold
+      accentDark: "#cd7f32", // Atlas bronze
       
       // Status colors with teal-gold theme
       success: "#059669", // Emerald green (teal family)
@@ -111,41 +126,42 @@ export const CONFIG = {
       warning: "#d97706", // Amber (gold family)
       warningBg: "#fffbeb",
       
-      // Text colors
-      text: "#134e4a", // Dark teal text
-      textLight: "#6b7280", // Gray text
-      textInverse: "#ffffff", // White text for dark backgrounds
+      // Text colors (Atlas dark theme)
+      text: "#ffffff", // White text for dark theme
+      textLight: "#b8b8b8", // Light gray text
+      textInverse: "#0a0a0a", // Dark text for light backgrounds
       
-      // Background colors
-      background: "#f0fdfa", // Very light teal background
-      backgroundSecondary: "#ecfdf5", // Light emerald background
-      backgroundDark: "#134e4a", // Dark teal background
+      // Background colors (Atlas dark theme)
+      background: "#0a0a0a", // Primary dark background
+      backgroundSecondary: "#1a1a1a", // Secondary dark background
+      backgroundDark: "#000000", // Pure black background
       
-      // Surface colors
-      surface: "#ffffff", // White surface
-      surfaceTeal: "#f0fdfa", // Light teal surface
-      surfaceGold: "#fffbeb", // Light gold surface
+      // Surface colors (Atlas dark theme)
+      surface: "rgba(26, 26, 26, 0.95)", // Dark translucent surface
+      surfaceTeal: "rgba(0, 128, 128, 0.1)", // Dark teal surface
+      surfaceGold: "rgba(212, 175, 55, 0.1)", // Dark gold surface
       
-      // Border colors
-      border: "#94a3b8", // Gray border
-      borderTeal: "#5eead4", // Teal border
-      borderGold: "#fde68a", // Gold border
+      // Border colors (Atlas dark theme)
+      border: "rgba(212, 175, 55, 0.2)", // Gold border with opacity
+      borderTeal: "rgba(0, 128, 128, 0.3)", // Teal border with opacity
+      borderGold: "rgba(212, 175, 55, 0.4)", // Brighter gold border
       
-      // Gradients
-      gradientPrimary: "linear-gradient(135deg, #0f766e 0%, #14b8a6 100%)", // Teal gradient
-      gradientAccent: "linear-gradient(135deg, #d97706 0%, #fbbf24 100%)", // Gold gradient
-      gradientDark: "linear-gradient(135deg, #134e4a 0%, #0f766e 100%)", // Dark teal gradient
-      gradientTealGold: "linear-gradient(135deg, #0f766e 0%, #fbbf24 100%)", // Teal to gold
+      // Gradients (Atlas theme)
+      gradientPrimary: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%)", // Dark gradient
+      gradientAccent: "linear-gradient(135deg, #d4af37 0%, #cd7f32 100%)", // Gold to bronze
+      gradientDark: "linear-gradient(135deg, #000000 0%, #0a0a0a 100%)", // Pure dark gradient
+      gradientTealGold: "linear-gradient(135deg, #008080 0%, #d4af37 100%)", // Atlas teal to gold
       
-      // Shadow colors
-      shadowTeal: "rgba(15, 118, 110, 0.15)",
-      shadowGold: "rgba(251, 191, 36, 0.15)",
-      shadowDark: "rgba(19, 78, 74, 0.25)"
+      // Shadow colors (Atlas theme)
+      shadowTeal: "rgba(0, 128, 128, 0.3)",
+      shadowGold: "rgba(212, 175, 55, 0.3)",
+      shadowDark: "rgba(0, 0, 0, 0.5)"
     },
     
-    // Typography
+    // Typography (matching design spec)
     fonts: {
-      primary: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+      primary: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      heading: "'Montserrat', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
     },
     
     // Visual effects
@@ -163,8 +179,8 @@ export const CONFIG = {
   security: {
     // Email addresses allowed to access admin panel (if not using Cloudflare Access)
     allowedAdminEmails: [
-      "admin@yourdomain.com",
-      "manager@yourdomain.com"
+      "harley@atlasdivisions.com",
+      "admin@atlasdivisions.com"
       // Add more admin emails as needed
     ],
     

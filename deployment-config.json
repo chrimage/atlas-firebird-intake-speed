@@ -1,0 +1,76 @@
+{
+  "cloudflare_pages": {
+    "project_name": "your-company-marketing",
+    "build_settings": {
+      "framework": "static",
+      "build_command": "",
+      "build_output_directory": ".",
+      "root_directory": "marketing-pages"
+    },
+    "environment_variables": {
+      "NODE_VERSION": "18",
+      "HUGO_VERSION": "0.110.0"
+    },
+    "custom_domains": [
+      "yourdomain.com",
+      "www.yourdomain.com"
+    ],
+    "redirects": [
+      {
+        "source": "/contact-us",
+        "destination": "/contact",
+        "status": 301
+      },
+      {
+        "source": "/get-quote",
+        "destination": "/contact?service=Sales%20Question",
+        "status": 301
+      }
+    ]
+  },
+  "cloudflare_workers": {
+    "routes": [
+      {
+        "pattern": "yourdomain.com/contact*",
+        "worker": "your-contact-form"
+      },
+      {
+        "pattern": "yourdomain.com/admin*", 
+        "worker": "your-contact-form"
+      },
+      {
+        "pattern": "yourdomain.com/api/*",
+        "worker": "your-contact-form"
+      }
+    ]
+  },
+  "dns_configuration": {
+    "records": [
+      {
+        "type": "CNAME",
+        "name": "@",
+        "content": "your-pages-project.pages.dev",
+        "proxied": true
+      },
+      {
+        "type": "CNAME", 
+        "name": "www",
+        "content": "your-pages-project.pages.dev",
+        "proxied": true
+      }
+    ]
+  },
+  "performance_targets": {
+    "lighthouse_scores": {
+      "performance": 95,
+      "accessibility": 100,
+      "best_practices": 100,
+      "seo": 100
+    },
+    "core_web_vitals": {
+      "lcp": "< 2.5s",
+      "fid": "< 100ms", 
+      "cls": "< 0.1"
+    }
+  }
+}

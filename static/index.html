@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atlas Divisions - Solutions That Outlast the Storm</title>
+    <meta name="description" content="Atlas Divisions - Mapping Chaos, Building Resilience. Professional services in auto repair, logistics, AI tools, and emergency response.">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r162/three.min.js"></script>
+    
+    <style>
+        :root {
+            /* Atlas Divisions Brand Colors */
+            --color-bg: #0a0a0a;
+            --color-bg-secondary: #1a1a1a;
+            --color-text: #ffffff;
+            --color-text-secondary: #b8b8b8;
+            --color-accent-gold: #d4af37;
+            --color-accent-bronze: #cd7f32;
+            --color-accent-teal: #008080;
+            --emergency-red: #dc143c;
+            --ocean-blue: #001122;
+            
+            /* Typography */
+            --font-heading: 'Montserrat', sans-serif;
+            --font-body: 'Inter', sans-serif;
+            
+            /* Effects */
+            --border-radius: 8px;
+            --border-radius-large: 12px;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-body);
+            background: var(--color-bg);
+            color: var(--color-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+        
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+            height: 70px;
+        }
+        
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+        
+        .nav-brand {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-accent-gold);
+            text-decoration: none;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+        
+        .nav-links a {
+            color: var(--color-text);
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .nav-links a:hover {
+            color: var(--color-accent-gold);
+        }
+        
+        .nav-contact {
+            background: var(--color-accent-teal);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        
+        .nav-contact:hover {
+            background: #006666;
+            transform: translateY(-2px);
+        }
+        
+        /* Mobile menu */
+        .mobile-menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--color-text);
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 7rem 0 4rem;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+        
+        .hero-content {
+            animation: fadeInUp 1s ease-out;
+        }
+        
+        .hero-globe {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: fadeInUp 1s ease-out 0.3s both;
+        }
+        
+        .company-title {
+            font-family: var(--font-heading);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            color: var(--color-accent-gold);
+            margin-bottom: 1rem;
+            text-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+        }
+        
+        .company-tagline {
+            font-size: clamp(1.2rem, 2.5vw, 1.5rem);
+            color: var(--color-text-secondary);
+            margin-bottom: 1rem;
+            font-weight: 500;
+        }
+        
+        .company-message {
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            color: var(--color-accent-teal);
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+        
+        .identity-card {
+            background: rgba(26, 26, 26, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: var(--border-radius-large);
+            padding: 2rem;
+            margin: 2rem 0;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .identity-text {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: var(--color-text);
+        }
+        
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-accent-teal) 0%, var(--color-accent-gold) 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: var(--color-accent-gold);
+            border: 2px solid var(--color-accent-gold);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--color-accent-gold);
+            color: var(--color-bg);
+            transform: translateY(-2px);
+        }
+        
+        .email-copy {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--color-accent-gold);
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .email-copy:hover {
+            color: var(--color-accent-bronze);
+        }
+        
+        /* Globe Container */
+        #globe-container {
+            width: 400px;
+            height: 400px;
+            position: relative;
+            margin: 0 auto;
+            filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.3));
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        #globe-container:hover {
+            transform: scale(1.05);
+        }
+        
+        /* Services Section */
+        .services {
+            padding: 6rem 0;
+            background: var(--color-bg-secondary);
+        }
+        
+        .services-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+        
+        .section-title {
+            font-family: var(--font-heading);
+            font-size: clamp(2rem, 4vw, 3rem);
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--color-text);
+        }
+        
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+        
+        .service-card {
+            background: rgba(26, 26, 26, 0.95);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            border-radius: var(--border-radius-large);
+            padding: 2rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, var(--color-accent-teal) 0%, var(--color-accent-gold) 100%);
+        }
+        
+        .service-card.emergency::before {
+            background: var(--emergency-red);
+        }
+        
+        .service-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(212, 175, 55, 0.4);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+        
+        .service-title {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--color-text);
+        }
+        
+        .service-focus {
+            color: var(--color-accent-gold);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        
+        .service-features {
+            list-style: none;
+            margin-bottom: 1.5rem;
+        }
+        
+        .service-features li {
+            padding: 0.25rem 0;
+            color: var(--color-text-secondary);
+            position: relative;
+            padding-left: 1.5rem;
+        }
+        
+        .service-features li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--color-accent-teal);
+            font-weight: bold;
+        }
+        
+        .emergency .service-features li::before {
+            color: var(--emergency-red);
+        }
+        
+        /* Contact Section */
+        .contact {
+            padding: 6rem 0;
+            background: var(--color-bg);
+        }
+        
+        .contact-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+        }
+        
+        .contact-info h2 {
+            font-family: var(--font-heading);
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+            color: var(--color-text);
+        }
+        
+        .contact-methods {
+            margin-bottom: 2rem;
+        }
+        
+        .contact-method {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: rgba(26, 26, 26, 0.5);
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+        }
+        
+        .contact-method:hover {
+            background: rgba(26, 26, 26, 0.8);
+        }
+        
+        .contact-form {
+            background: rgba(26, 26, 26, 0.95);
+            padding: 2rem;
+            border-radius: var(--border-radius-large);
+            border: 1px solid rgba(212, 175, 55, 0.2);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--color-text);
+            font-weight: 600;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid rgba(212, 175, 55, 0.2);
+            border-radius: var(--border-radius);
+            background: rgba(10, 10, 10, 0.5);
+            color: var(--color-text);
+            font-family: var(--font-body);
+            transition: var(--transition);
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--color-accent-gold);
+            box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
+        }
+        
+        .required {
+            color: var(--emergency-red);
+        }
+        
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .hero-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            
+            .hero-globe {
+                order: -1;
+            }
+            
+            #globe-container {
+                width: 250px;
+                height: 250px;
+            }
+            
+            .contact-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .cta-buttons {
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .nav-container {
+                padding: 0 1rem;
+            }
+            
+            .hero {
+                padding: 5rem 0 2rem;
+            }
+            
+            .hero-container,
+            .services-container,
+            .contact-container {
+                padding: 0 1rem;
+            }
+            
+            #globe-container {
+                width: 200px;
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="#home" class="nav-brand">🌍 Atlas Divisions</a>
+            <ul class="nav-links">
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <a href="#contact" class="nav-contact">Get in Touch</a>
+            <button class="mobile-menu-toggle">☰</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="home" class="hero">
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="company-title">Atlas Divisions</h1>
+                <p class="company-tagline">Solutions That Outlast the Storm</p>
+                <p class="company-message">Mapping Chaos. Building Resilience.</p>
+                
+                <div class="identity-card">
+                    <p class="identity-text">
+                        Founded by <strong>Captain Harley Miller</strong>, Atlas Divisions delivers no-nonsense, 
+                        transparent solutions across multiple domains. We specialize in adaptive response, 
+                        crisis management, and building systems that endure. Our military-influenced precision 
+                        meets practical problem-solving to create solutions that truly outlast the storm.
+                    </p>
+                </div>
+                
+                <div class="cta-buttons">
+                    <a href="#services" class="btn btn-primary">
+                        Explore Services
+                    </a>
+                    <a href="#contact" class="btn btn-secondary">
+                        Start Project
+                    </a>
+                </div>
+                
+                <div class="cta-buttons">
+                    <span class="email-copy" onclick="copyEmail()">
+                        📧 harley@atlasdivisions.com
+                        <span id="copy-feedback" style="display: none; color: var(--color-accent-teal);">✓ Copied!</span>
+                    </span>
+                </div>
+            </div>
+            
+            <div class="hero-globe">
+                <div id="globe-container"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services">
+        <div class="services-container">
+            <h2 class="section-title">Our Services</h2>
+            <div class="services-grid">
+                <div class="service-card">
+                    <span class="service-icon">🔧</span>
+                    <h3 class="service-title">Auto & Home Systems Repair</h3>
+                    <p class="service-focus">Practical, reliable repairs</p>
+                    <ul class="service-features">
+                        <li>Transparent pricing</li>
+                        <li>Emergency availability</li>
+                        <li>Maintenance planning</li>
+                        <li>No-nonsense diagnostics</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card">
+                    <span class="service-icon">📊</span>
+                    <h3 class="service-title">Logistics & Adaptive Operations</h3>
+                    <p class="service-focus">Streamlined operations for businesses</p>
+                    <ul class="service-features">
+                        <li>Tailored solutions</li>
+                        <li>Crisis response</li>
+                        <li>Efficiency audits</li>
+                        <li>Scalable design</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card">
+                    <span class="service-icon">🤖</span>
+                    <h3 class="service-title">AI Tools & Digital Infrastructure</h3>
+                    <p class="service-focus">Transparent AI integration</p>
+                    <ul class="service-features">
+                        <li>Ethical implementation</li>
+                        <li>Custom automation</li>
+                        <li>Infrastructure setup</li>
+                        <li>Training & documentation</li>
+                    </ul>
+                </div>
+                
+                <div class="service-card emergency">
+                    <span class="service-icon">🚨</span>
+                    <h3 class="service-title">Emergency & Crisis Response</h3>
+                    <p class="service-focus">24/7 urgent situation response</p>
+                    <ul class="service-features">
+                        <li>Emergency availability</li>
+                        <li>Rapid assessment</li>
+                        <li>Multi-domain management</li>
+                        <li>Clear communication</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="contact-container">
+            <div class="contact-info">
+                <h2>Get in Touch</h2>
+                <div class="contact-methods">
+                    <div class="contact-method">
+                        <span>📧</span>
+                        <div>
+                            <strong>Email:</strong><br>
+                            <span class="email-copy" onclick="copyEmail()">harley@atlasdivisions.com</span>
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <span>⚡</span>
+                        <div>
+                            <strong>Response Time:</strong><br>
+                            Within 24 hours
+                        </div>
+                    </div>
+                    <div class="contact-method">
+                        <span>🌐</span>
+                        <div>
+                            <strong>Domain:</strong><br>
+                            atlasdivisions.com
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="contact-form">
+                <h3>Send a Message</h3>
+                <form action="/submit" method="POST">
+                    <div class="form-group">
+                        <label for="name">Name <span class="required">*</span></label>
+                        <input type="text" id="name" name="name" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" name="email">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">Phone</label>
+                        <input type="tel" id="phone" name="phone">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="service_type">Service Type <span class="required">*</span></label>
+                        <select id="service_type" name="service_type" required>
+                            <option value="">Select a service...</option>
+                            <option value="Auto & Home Systems Repair">Auto & Home Systems Repair</option>
+                            <option value="Logistics & Adaptive Operations">Logistics & Adaptive Operations</option>
+                            <option value="AI Tools & Digital Infrastructure">AI Tools & Digital Infrastructure</option>
+                            <option value="Emergency & Crisis Response">Emergency & Crisis Response</option>
+                            <option value="General Inquiry">General Inquiry</option>
+                            <option value="Partnership Opportunity">Partnership Opportunity</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="message">Message <span class="required">*</span></label>
+                        <textarea id="message" name="message" rows="5" placeholder="Describe how we can help you..." required></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">
+                        Send Message 🚀
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Three.js Globe Implementation
+        let scene, camera, renderer, globe, animationId;
+        let mouseX = 0, mouseY = 0;
+        let targetRotationX = 0, targetRotationY = 0;
+        
+        function initGlobe() {
+            const container = document.getElementById('globe-container');
+            if (!container) return;
+            
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            // Scene setup
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setClearColor(0x000000, 0);
+            container.appendChild(renderer.domElement);
+            
+            // Globe geometry
+            const geometry = new THREE.SphereGeometry(1.5, 64, 64);
+            
+            // Create world map texture
+            const canvas = document.createElement('canvas');
+            canvas.width = 2048;
+            canvas.height = 1024;
+            const ctx = canvas.getContext('2d');
+            
+            // Ocean color
+            ctx.fillStyle = '#001122';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Load GeoJSON data for world map
+            fetchWorldMap().then(worldData => {
+                drawWorldMap(ctx, worldData, canvas.width, canvas.height);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.MeshPhongMaterial({ 
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                globe = new THREE.Mesh(geometry, material);
+                scene.add(globe);
+                
+                // Lighting
+                const ambientLight = new THREE.AmbientLight(0xd4af37, 0.4);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xd4af37, 0.8);
+                directionalLight.position.set(5, 3, 5);
+                scene.add(directionalLight);
+                
+                // Atmosphere glow
+                const atmosphereGeometry = new THREE.SphereGeometry(1.6, 32, 32);
+                const atmosphereMaterial = new THREE.MeshBasicMaterial({
+                    color: 0xd4af37,
+                    transparent: true,
+                    opacity: 0.1,
+                    side: THREE.BackSide
+                });
+                const atmosphere = new THREE.Mesh(atmosphereGeometry, atmosphereMaterial);
+                scene.add(atmosphere);
+                
+                camera.position.z = 4;
+                
+                // Start animation
+                animate();
+            }).catch(error => {
+                console.warn('Failed to load world map data, using fallback:', error);
+                drawFallbackMap(ctx, canvas.width, canvas.height);
+                
+                const texture = new THREE.CanvasTexture(canvas);
+                const material = new THREE.MeshPhongMaterial({ 
+                    map: texture,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                
+                globe = new THREE.Mesh(geometry, material);
+                scene.add(globe);
+                
+                // Add lighting for fallback
+                const ambientLight = new THREE.AmbientLight(0xd4af37, 0.4);
+                scene.add(ambientLight);
+                
+                const directionalLight = new THREE.DirectionalLight(0xd4af37, 0.8);
+                directionalLight.position.set(5, 3, 5);
+                scene.add(directionalLight);
+                
+                camera.position.z = 4;
+                animate();
+            });
+            
+            // Mouse interaction
+            container.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('resize', onWindowResize);
+        }
+        
+        async function fetchWorldMap() {
+            const response = await fetch('https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson');
+            if (!response.ok) throw new Error('Failed to fetch world map');
+            return await response.json();
+        }
+        
+        function drawWorldMap(ctx, worldData, width, height) {
+            ctx.fillStyle = '#d4af37'; // Atlas gold for land
+            ctx.strokeStyle = '#cd7f32'; // Atlas bronze for borders
+            ctx.lineWidth = 1;
+            
+            worldData.features.forEach(feature => {
+                if (feature.geometry.type === 'Polygon') {
+                    drawPolygon(ctx, feature.geometry.coordinates[0], width, height);
+                } else if (feature.geometry.type === 'MultiPolygon') {
+                    feature.geometry.coordinates.forEach(polygon => {
+                        drawPolygon(ctx, polygon[0], width, height);
+                    });
+                }
+            });
+        }
+        
+        function drawPolygon(ctx, coordinates, width, height) {
+            ctx.beginPath();
+            coordinates.forEach((coord, index) => {
+                const x = ((coord[0] + 180) / 360) * width;
+                const y = ((90 - coord[1]) / 180) * height;
+                
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+        
+        function drawFallbackMap(ctx, width, height) {
+            ctx.fillStyle = '#d4af37'; // Atlas gold
+            ctx.strokeStyle = '#cd7f32'; // Atlas bronze
+            ctx.lineWidth = 2;
+            
+            // Simplified continent rectangles
+            const continents = [
+                { name: 'North America', x: 0.2, y: 0.3, w: 0.25, h: 0.4 },
+                { name: 'South America', x: 0.25, y: 0.5, w: 0.15, h: 0.35 },
+                { name: 'Europe', x: 0.48, y: 0.25, w: 0.12, h: 0.15 },
+                { name: 'Africa', x: 0.5, y: 0.35, w: 0.15, h: 0.4 },
+                { name: 'Asia', x: 0.6, y: 0.2, w: 0.3, h: 0.35 },
+                { name: 'Australia', x: 0.75, y: 0.65, w: 0.12, h: 0.1 }
+            ];
+            
+            continents.forEach(continent => {
+                const x = continent.x * width;
+                const y = continent.y * height;
+                const w = continent.w * width;
+                const h = continent.h * height;
+                
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeRect(x, y, w, h);
+            });
+        }
+        
+        function onMouseMove(event) {
+            const container = document.getElementById('globe-container');
+            const rect = container.getBoundingClientRect();
+            mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseY = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            
+            targetRotationX = mouseY * 0.1;
+            targetRotationY = mouseX * 0.1;
+        }
+        
+        function animate() {
+            animationId = requestAnimationFrame(animate);
+            
+            if (globe) {
+                // Auto rotation
+                globe.rotation.y += 0.005;
+                
+                // Mouse interaction
+                globe.rotation.x += (targetRotationX - globe.rotation.x) * 0.05;
+                globe.rotation.y += (targetRotationY - globe.rotation.y) * 0.05;
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        function onWindowResize() {
+            const container = document.getElementById('globe-container');
+            if (!container) return;
+            
+            const width = container.offsetWidth;
+            const height = container.offsetHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+        
+        // Copy email functionality
+        function copyEmail() {
+            const email = 'harley@atlasdivisions.com';
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(email).then(() => {
+                    showCopyFeedback();
+                }).catch(() => {
+                    fallbackCopyMethod(email);
+                });
+            } else {
+                fallbackCopyMethod(email);
+            }
+        }
+        
+        function fallbackCopyMethod(email) {
+            const textArea = document.createElement('textarea');
+            textArea.value = email;
+            textArea.style.position = 'fixed';
+            textArea.style.opacity = '0';
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                showCopyFeedback();
+            } catch (err) {
+                console.error('Failed to copy email:', err);
+            }
+            
+            document.body.removeChild(textArea);
+        }
+        
+        function showCopyFeedback() {
+            const feedback = document.getElementById('copy-feedback');
+            if (feedback) {
+                feedback.style.display = 'inline';
+                setTimeout(() => {
+                    feedback.style.display = 'none';
+                }, 2000);
+            }
+        }
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Initialize globe when page loads
+        window.addEventListener('load', initGlobe);
+        
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+            }
+        });
+    </script>
+</body>
+</html>
