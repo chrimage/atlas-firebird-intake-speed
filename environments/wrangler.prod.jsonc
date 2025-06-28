@@ -1,0 +1,62 @@
+/**
+ * Production Environment Configuration
+ * 
+ * Copy this to wrangler.jsonc for production deployment
+ */
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	
+	"name": "your-contact-form",
+	"main": "src/index.ts",
+	"account_id": "YOUR_ACCOUNT_ID_HERE",
+	
+	"compatibility_date": "2025-06-28",
+	"compatibility_flags": [
+		"global_fetch_strictly_public",
+		"nodejs_compat"
+	],
+	
+	// Enable full observability in production
+	"observability": {
+		"enabled": true
+	},
+	
+	// Smart Placement for optimal global performance
+	"placement": { 
+		"mode": "smart" 
+	},
+	
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "your-contact-db",
+			"database_id": "YOUR_PRODUCTION_DATABASE_ID_HERE"
+		}
+	],
+	
+	"vars": {
+		"FROM_EMAIL": "contact@yourdomain.com",
+		"ADMIN_EMAIL": "admin@yourdomain.com",
+		"ENVIRONMENT": "production"
+	},
+	
+	"send_email": [
+		{
+			"name": "EMAIL_SENDER",
+			"allowed_destination_addresses": [
+				"admin@yourdomain.com",
+				"support@yourdomain.com",
+				"manager@yourdomain.com"
+			]
+		}
+	],
+	
+	// Optional: Custom domain configuration
+	// Uncomment and configure after setting up custom domain in Cloudflare Dashboard
+	// "routes": [
+	//   { 
+	//     "pattern": "contact.yourdomain.com/*", 
+	//     "custom_domain": true 
+	//   }
+	// ]
+}

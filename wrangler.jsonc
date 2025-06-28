@@ -1,74 +1,70 @@
 /**
- * For more details on how to configure Wrangler, refer to:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
+ * TEMPLATE CONFIGURATION FILE
+ * 
+ * This file contains example/template values.
+ * Copy wrangler.example.jsonc to wrangler.jsonc and update with your values.
+ * 
+ * For more details: https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "intake-speed",
+	
+	// TODO: Update these values for your deployment
+	"name": "REPLACE_WITH_YOUR_WORKER_NAME",
 	"main": "src/index.ts",
-	"account_id": "42787465cd6e717769c0a5427e266a75",
+	"account_id": "REPLACE_WITH_YOUR_ACCOUNT_ID",
+	
 	"compatibility_date": "2025-06-28",
 	"compatibility_flags": [
 		"global_fetch_strictly_public",
-	  "nodejs_compat"
+		"nodejs_compat"
 	],
 	"observability": {
 		"enabled": true
 	},
+	
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "intake-db",
-			"database_id": "a853ae40-3390-4fe5-b3fb-20606353afd3"
+			"database_name": "REPLACE_WITH_YOUR_DB_NAME",
+			"database_id": "REPLACE_WITH_YOUR_DB_ID"
 		}
 	],
+	
 	"vars": {
-		"FROM_EMAIL": "contact@bytecrash.xyz",
-		"ADMIN_EMAIL": "john.chris.smith@gmail.com",
+		"FROM_EMAIL": "REPLACE_WITH_YOUR_FROM_EMAIL",
+		"ADMIN_EMAIL": "REPLACE_WITH_YOUR_ADMIN_EMAIL",
 		"ENVIRONMENT": "production"
 	},
+	
 	"send_email": [
 		{
 			"name": "EMAIL_SENDER",
 			"allowed_destination_addresses": [
-				"john.chris.smith@gmail.com",
-				"admin@atlasfirebird.com",
-				"support@atlasfirebird.com"
+				"REPLACE_WITH_YOUR_ADMIN_EMAILS"
 			]
 		}
 	]
+	
 	/**
-	 * Smart Placement
-	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
+	 * Optional Advanced Configuration
 	 */
+	
+	// Smart Placement (recommended for global performance)
 	// "placement": { "mode": "smart" },
-
-	/**
-	 * Bindings
-	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
-	 * databases, object storage, AI inference, real-time communication and more.
-	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
-	 */
-
-	/**
-	 * Environment Variables
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#environment-variables
-	 */
-	// "vars": { "MY_VARIABLE": "production_value" },
-	/**
-	 * Note: Use secrets to store sensitive data.
-	 * https://developers.cloudflare.com/workers/configuration/secrets/
-	 */
-
-	/**
-	 * Static Assets
-	 * https://developers.cloudflare.com/workers/static-assets/binding/
-	 */
-	// "assets": { "directory": "./public/", "binding": "ASSETS" },
-
-	/**
-	 * Service Bindings (communicate between multiple Workers)
-	 * https://developers.cloudflare.com/workers/wrangler/configuration/#service-bindings
-	 */
-	// "services": [{ "binding": "MY_SERVICE", "service": "my-service" }]
+	
+	// Custom Domain (set up in Cloudflare Dashboard first)
+	// "routes": [
+	//   { "pattern": "contact.yourdomain.com/*", "custom_domain": true }
+	// ],
+	
+	// Environment-specific variables
+	// "env": {
+	//   "staging": {
+	//     "vars": {
+	//       "ENVIRONMENT": "staging",
+	//       "ADMIN_EMAIL": "staging-admin@yourdomain.com"
+	//     }
+	//   }
+	// }
 }

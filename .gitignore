@@ -178,3 +178,4 @@ dist
 
 # Planning documents (internal development docs - in parent directory)
 ../.planning/
+cloudflare-workers-auth-research-prompt.md

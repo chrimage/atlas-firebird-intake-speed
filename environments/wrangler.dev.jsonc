@@ -1,0 +1,48 @@
+/**
+ * Development Environment Configuration
+ * 
+ * Copy this to wrangler.jsonc for local development
+ */
+{
+	"$schema": "../node_modules/wrangler/config-schema.json",
+	
+	"name": "your-contact-form-dev",
+	"main": "src/index.ts",
+	"account_id": "YOUR_ACCOUNT_ID_HERE",
+	
+	"compatibility_date": "2025-06-28",
+	"compatibility_flags": [
+		"global_fetch_strictly_public",
+		"nodejs_compat"
+	],
+	
+	// Disable observability in development to reduce noise
+	"observability": {
+		"enabled": false
+	},
+	
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "your-contact-db-dev",
+			"database_id": "YOUR_DEV_DATABASE_ID_HERE"
+		}
+	],
+	
+	"vars": {
+		"FROM_EMAIL": "dev-contact@yourdomain.com",
+		"ADMIN_EMAIL": "dev-admin@yourdomain.com",
+		"ENVIRONMENT": "development"
+	},
+	
+	// Email sending disabled in development by default
+	// Uncomment and configure if you want to test emails
+	// "send_email": [
+	//   {
+	//     "name": "EMAIL_SENDER",
+	//     "allowed_destination_addresses": [
+	//       "dev-admin@yourdomain.com"
+	//     ]
+	//   }
+	// ]
+}

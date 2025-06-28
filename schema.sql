@@ -1,5 +1,5 @@
--- Atlas Firebird Intake Database Schema
--- Single table approach - YOLO edition!
+-- Contact Form & Admin Panel Database Schema
+-- Simple, efficient single table design
 
 CREATE TABLE submissions (
   id TEXT PRIMARY KEY,
