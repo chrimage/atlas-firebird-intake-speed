@@ -2,7 +2,6 @@
  * Email Utilities
  */
 
-import Mailgun from "mailgun.js";
 import { createMimeMessage } from "mimetext";
 import type { FormSubmission, Env } from '../types/index.js';
 import { getConfig, type CONFIG } from '../config.js';
@@ -17,34 +16,36 @@ export async function sendAdminNotification(
   submission: FormSubmission
 ): Promise<void> {
   try {
-    // Initialize Mailgun client
-    const mailgun = new Mailgun(FormData);
-    const mg = mailgun.client({
-      username: 'api',
-      key: env.MAILGUN_API_KEY,
-    });
-    
-    // Configure email using config
     const config = getConfig(env.ENVIRONMENT);
-    
-    // Create informative subject line
     const subjectLine = createSubjectLine(submission, config);
-    
-    // Create email content
     const emailContent = createEmailContent(submission, env, config);
+    const domain = env.MG_DOMAIN;
+    const apiKey = env.MG_API_KEY;
     
-    // Send email via Mailgun
-    await mg.messages.create(env.MAILGUN_DOMAIN, {
+    console.log(`🌍 Sending Atlas Divisions email via domain: ${domain}`);
+    const params = new URLSearchParams({
       from: `${config.email.systemName} <${env.FROM_EMAIL}>`,
-      to: [env.ADMIN_EMAIL],
+      to: env.ADMIN_EMAIL,
       subject: subjectLine,
-      text: emailContent,
+      text: emailContent
     });
-
-    console.log(`✅ Email sent for submission ${submission.id}`);
     
+    const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + btoa(`api:${apiKey}`),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
+    });
+    
+    if (!response.ok) {
+      console.error(`❌ Email failed: ${response.status} ${response.statusText}`);
+    } else {
+      console.log(`✅ Atlas Divisions email sent: ${response.status} - submission ${submission.id}`);
+    }
   } catch (error) {
-    console.error(`❌ Email failed for submission ${submission.id}:`, error);
+    console.error('Error sending Atlas Divisions email:', error);
     // Don't throw - we don't want email failure to break form submission
   }
 }
@@ -102,8 +103,8 @@ ${config.email.templates.adminNotification.footer}
  */
 export function shouldSendEmail(config: typeof CONFIG, env: Env): boolean {
   return config.features.enableEmailNotifications && 
-         !!env.MAILGUN_API_KEY && 
-         !!env.MAILGUN_DOMAIN &&
+         !!env.MG_API_KEY && 
+         !!env.MG_DOMAIN &&
          !!env.ADMIN_EMAIL;
 }
 
@@ -116,6 +117,6 @@ export function logEmailStatus(config: typeof CONFIG, env: Env): void {
   if (shouldSendEmail(config, env)) {
     console.log("✅ Email notifications enabled and configured");
   } else {
-    console.log("❌ MAILGUN_API_KEY, MAILGUN_DOMAIN, or ADMIN_EMAIL not configured, or email notifications disabled");
+    console.log("❌ MG_API_KEY, MG_DOMAIN, or ADMIN_EMAIL not configured, or email notifications disabled");
   }
 }

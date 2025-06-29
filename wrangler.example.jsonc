@@ -53,11 +53,11 @@
 		"ADMIN_EMAIL": "admin@yourdomain.com",
 		
 		// TODO: Add your Mailgun domain (e.g., "mg.yourdomain.com")
-		"MAILGUN_DOMAIN": "mg.yourdomain.com",
+		"MG_DOMAIN": "mg.yourdomain.com",
 		
 		// TODO: Add your Mailgun private API key
 		// SECURITY: This is sensitive - never commit the real value
-		"MAILGUN_API_KEY": "key-your-mailgun-api-key-here",
+		"MG_API_KEY": "key-your-mailgun-api-key-here",
 		
 		"ENVIRONMENT": "production"
 	}

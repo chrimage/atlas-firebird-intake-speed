@@ -13,7 +13,6 @@
 		"build": "tsc"
 	},
 	"dependencies": {
-		"mailgun.js": "^10.2.3",
 		"mimetext": "^3.0.27",
 		"three": "^0.177.0"
 	},

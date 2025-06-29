@@ -32,8 +32,8 @@
 	"vars": {
 		"FROM_EMAIL": "dev-contact@yourdomain.com",
 		"ADMIN_EMAIL": "dev-admin@yourdomain.com",
-		"MAILGUN_DOMAIN": "mg.yourdomain.com",
-		"MAILGUN_API_KEY": "key-your-dev-mailgun-api-key-here",
+		"MG_DOMAIN": "mg.yourdomain.com",
+		"MG_API_KEY": "key-your-dev-mailgun-api-key-here",
 		"ENVIRONMENT": "development"
 	}
 }
