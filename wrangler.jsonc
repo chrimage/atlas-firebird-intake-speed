@@ -10,9 +10,9 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	
 	// TODO: Update these values for your deployment
-	"name": "REPLACE_WITH_YOUR_WORKER_NAME",
+	"name": "firebird-intake",
 	"main": "src/index.ts",
-	"account_id": "REPLACE_WITH_YOUR_ACCOUNT_ID",
+	"account_id": "289b455192a9eaf0a0d035e2d342944a",
 	
 	"compatibility_date": "2025-06-28",
 	"compatibility_flags": [
@@ -25,24 +25,25 @@
 	
 	"d1_databases": [
 		{
-			"binding": "DB",
-			"database_name": "REPLACE_WITH_YOUR_DB_NAME",
-			"database_id": "REPLACE_WITH_YOUR_DB_ID"
+"binding": "DB",
+"database_name": "firebird-intake-db",
+"database_id": "2d95737f-6c51-47a6-a53c-f6d23fd1f188"
 		}
 	],
 	
-	"vars": {
-		"FROM_EMAIL": "REPLACE_WITH_YOUR_FROM_EMAIL",
-		"ADMIN_EMAIL": "REPLACE_WITH_YOUR_ADMIN_EMAIL",
-		"ENVIRONMENT": "production"
-	},
+  "vars": {
+    "FROM_EMAIL": "notify@atlasdivisions.com",
+    "ADMIN_EMAIL": "Harley@atlasdivisions.com",
+    "ENVIRONMENT": "production",
+    "MG_DOMAIN": "mg.atlasdivisions.com"
+  },
 	
 	"send_email": [
 		{
 			"name": "EMAIL_SENDER",
-			"allowed_destination_addresses": [
-				"REPLACE_WITH_YOUR_ADMIN_EMAILS"
-			]
+"allowed_destination_addresses": [
+  "Harley@atlasdivisions.com"
+]
 		}
 	]
 	

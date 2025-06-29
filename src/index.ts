@@ -1,4 +1,4 @@
-/**
+ /**
  * Contact Form & Admin Panel System 🚀
  * Single Worker handling contact form + admin panel
  *
@@ -10,13 +10,14 @@ import { createMimeMessage } from "mimetext";
 import { CONFIG, getConfig, validateConfig } from "./config";
 
 interface FormSubmission {
-	id: string;
-	name: string;
-	email?: string;
-	phone?: string;
-	service_type: string;
-	message: string;
-	timestamp: string;
+id: string;
+name: string;
+email?: string;
+phone?: string;
+priority?: string;
+service_type: string;
+message: string;
+timestamp: string;
 }
 
 interface CloudflareAccessUser {
@@ -30,11 +31,13 @@ interface CloudflareAccessUser {
 }
 
 interface Env {
-	DB: D1Database;
-	EMAIL_SENDER: any;        // New
-	FROM_EMAIL: string;       // New
-	ADMIN_EMAIL: string;      // New
-	ENVIRONMENT?: string;     // New
+DB: D1Database;
+EMAIL_SENDER: any;        // New
+FROM_EMAIL: string;       // New
+ADMIN_EMAIL: string;      // New
+ENVIRONMENT?: string;     // New
+MG_DOMAIN: string;        // Mailgun domain
+MG_API_KEY: string;       // Mailgun API key
 }
 
 /**
@@ -92,45 +95,36 @@ function extractUserFromAccessToken(request: Request): CloudflareAccessUser | nu
 }
 
 
-async function sendAdminNotification(
-  env: Env,
-  submission: FormSubmission
-): Promise<void> {
+async function sendAdminNotification(env: Env, submission: FormSubmission): Promise<void> {
   try {
-    const msg = createMimeMessage();
-    
-    // Configure sender and recipient using config
     const config = getConfig(env.ENVIRONMENT);
-    msg.setSender({
-      name: config.email.systemName,
-      addr: env.FROM_EMAIL
-    });
-    msg.setRecipient(env.ADMIN_EMAIL);
-    
-    // Create informative subject line
     const subjectLine = createSubjectLine(submission, config);
-    msg.setSubject(subjectLine);
-    
-    // Create email content
     const emailContent = createEmailContent(submission, env, config);
-    msg.addMessage({
-      contentType: 'text/plain',
-      data: emailContent
+    const domain = env.MG_DOMAIN;
+    const apiKey = env.MG_API_KEY;
++   console.log(`🐝 Sending Mailgun email via domain: ${domain}`);
++   console.log(`🐝 API Key prefix: ${apiKey.slice(0, 8)}`);
+    const params = new URLSearchParams({
+      from: `Atlas Divisions <firebird@${domain}>`,
+      to: env.ADMIN_EMAIL,
+      subject: subjectLine,
+      text: emailContent
     });
-
-    // Send email via Cloudflare
-    const message = new EmailMessage(
-      env.FROM_EMAIL,
-      env.ADMIN_EMAIL,
-      msg.asRaw()
-    );
-
-    await env.EMAIL_SENDER.send(message);
-    console.log(`✅ Email sent for submission ${submission.id}`);
-    
+    const response = await fetch(`https://api.mailgun.net/v3/${domain}/messages`, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Basic ' + btoa(`api:${apiKey}`),
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: params.toString()
+    });
+    if (!response.ok) {
+      console.error(`❌ Email failed: ${response.status} ${response.statusText}`);
+    } else {
+      console.log(`✅ Mailgun email sent: ${response.status}`);
+    }
   } catch (error) {
-    console.error(`❌ Email failed for submission ${submission.id}:`, error);
-    // Don't throw - we don't want email failure to break form submission
+    console.error('Error sending Mailgun email:', error);
   }
 }
 
@@ -236,6 +230,7 @@ async function handleSubmit(request: Request, env: Env, corsHeaders: Record<stri
 		const email = formData.get('email')?.toString();
 		const phone = formData.get('phone')?.toString();
 		const serviceType = formData.get('service_type')?.toString();
+const priority = formData.get('priority')?.toString();
 		const message = formData.get('message')?.toString();
 
 		// Basic validation
@@ -249,9 +244,9 @@ async function handleSubmit(request: Request, env: Env, corsHeaders: Record<stri
 		// Save to database
 		const timestamp = new Date().toISOString();
 		await env.DB.prepare(`
-			INSERT INTO submissions (id, name, email, phone, service_type, message, status, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, 'new', datetime('now'))
-		`).bind(id, name, email, phone, serviceType, message).run();
+			INSERT INTO submissions (id, name, email, phone, service_type, message, status, priority, created_at)
+			VALUES (?, ?, ?, ?, ?, ?, 'new', ?, datetime('now'))
+		`).bind(id, name, email, phone, serviceType, message, priority).run();
 
 		// After database save, add email notification
 		const submission: FormSubmission = {
@@ -648,11 +643,19 @@ function getContactFormHTML(config: typeof CONFIG): string {
 			
 			<div class="form-group">
 				<label for="service_type">Service Type <span class="required">*</span></label>
-				<select name="service_type" id="service_type" required>
-					<option value="">Select a service...</option>
-					${config.contactForm.serviceTypes.map(type => `<option value="${type}">${type}</option>`).join('')}
-				</select>
-			</div>
+<select name="service_type" id="service_type" required>
+<option value="">Select a service...</option>
+${config.contactForm.serviceTypes.map(type => `<option value="${type}">${type}</option>`).join('')}
+</select>
+</div>
+
+<div class="form-group">
+<label for="priority">Urgency</label>
+<select name="priority" id="priority">
+<option value="">Select urgency...</option>
+${config.contactForm.priorityLevels.map(level => `<option value="${level}">${level.charAt(0).toUpperCase() + level.slice(1)}</option>`).join('')}
+</select>
+</div>
 			
 			<div class="form-group">
 				<label for="message">Message <span class="required">*</span></label>
