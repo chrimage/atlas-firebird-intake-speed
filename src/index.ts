@@ -32,7 +32,6 @@ interface CloudflareAccessUser {
 
 interface Env {
 DB: D1Database;
-EMAIL_SENDER: any;        // New
 FROM_EMAIL: string;       // New
 ADMIN_EMAIL: string;      // New
 ENVIRONMENT?: string;     // New
@@ -103,8 +102,7 @@ async function sendAdminNotification(env: Env, submission: FormSubmission): Prom
     const domain = env.MG_DOMAIN;
     const apiKey = env.MG_API_KEY;
 +   console.log(`🐝 Sending Mailgun email via domain: ${domain}`);
-+   console.log(`🐝 API Key prefix: ${apiKey.slice(0, 8)}`);
-    const params = new URLSearchParams({
++     const params = new URLSearchParams({
       from: `Atlas Divisions <firebird@${domain}>`,
       to: env.ADMIN_EMAIL,
       subject: subjectLine,
@@ -260,12 +258,12 @@ const priority = formData.get('priority')?.toString();
 		};
 
 		// Send email notification asynchronously (doesn't block response)
-		if (config.features.enableEmailNotifications && env.EMAIL_SENDER && env.ADMIN_EMAIL) {
+		if (config.features.enableEmailNotifications && env.MG_API_KEY && env.ADMIN_EMAIL) {
 			console.log("Reaching sendAdminNotification");
 			await sendAdminNotification(env, submission);
 			console.log("sendAdminNotification completed");
 		} else {
-			console.log("EMAIL_SENDER or ADMIN_EMAIL not configured, or email notifications disabled");
+			console.log("MG_API_KEY or ADMIN_EMAIL not configured, or email notifications disabled");
 		}
 
 		return new Response(getSuccessHTML(config), {

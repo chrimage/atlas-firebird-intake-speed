@@ -38,14 +38,6 @@
     "MG_DOMAIN": "mg.atlasdivisions.com"
   },
 	
-	"send_email": [
-		{
-			"name": "EMAIL_SENDER",
-"allowed_destination_addresses": [
-  "Harley@atlasdivisions.com"
-]
-		}
-	]
 	
 	/**
 	 * Optional Advanced Configuration
