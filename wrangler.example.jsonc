@@ -1,10 +1,14 @@
 /**
- * Example Wrangler Configuration
- * 
- * Copy this file to wrangler.jsonc and update the values marked with "TODO"
- * 
- * For more details on configuration:
- * https://developers.cloudflare.com/workers/wrangler/configuration/
+ * 🔐 TEMPLATE WRANGLER CONFIGURATION
+ *
+ * SECURITY NOTICE: This is a template file with placeholder values.
+ *
+ * INSTRUCTIONS:
+ * 1. Copy this file to wrangler.jsonc: cp wrangler.example.jsonc wrangler.jsonc
+ * 2. Replace ALL values marked with "TODO" with your actual values
+ * 3. NEVER commit wrangler.jsonc to the repository (it's gitignored)
+ *
+ * For more details: https://developers.cloudflare.com/workers/wrangler/configuration/
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
@@ -16,7 +20,8 @@
 	
 	// TODO: Replace with your Cloudflare Account ID
 	// Get this by running: wrangler whoami
-	"account_id": "YOUR_ACCOUNT_ID_HERE",
+	// SECURITY: This is sensitive - never commit the real value
+	"account_id": "00000000000000000000000000000000",
 	
 	"compatibility_date": "2025-06-28",
 	"compatibility_flags": [
@@ -35,7 +40,8 @@
 			"database_name": "your-contact-db",
 			// TODO: Replace with your D1 database ID
 			// Get this by running: wrangler d1 create your-contact-db
-			"database_id": "YOUR_DATABASE_ID_HERE"
+			// SECURITY: This is sensitive - never commit the real value
+			"database_id": "00000000-0000-0000-0000-000000000000"
 		}
 	],
 	
@@ -55,6 +61,7 @@
 			"allowed_destination_addresses": [
 				// TODO: Add all email addresses that should receive notifications
 				// These MUST be verified in Cloudflare Email Routing first
+				// SECURITY: Use real admin emails in your actual wrangler.jsonc
 				"admin@yourdomain.com",
 				"support@yourdomain.com",
 				"manager@yourdomain.com"

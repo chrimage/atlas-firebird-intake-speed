@@ -29,14 +29,19 @@ Use this checklist to ensure your contact form deployment is properly configured
 - [ ] Database ID copied from output
 - [ ] Schema applied locally: `wrangler d1 execute your-contact-db --file=schema.sql`
 
-### ✅ Wrangler Configuration
-- [ ] `wrangler.example.jsonc` copied to `wrangler.jsonc`
+### ✅ 🔐 Secure Configuration Setup
+- [ ] **SECURITY CHECK:** Verified `.gitignore` includes production config files
+- [ ] Template files copied securely:
+  - [ ] `cp wrangler.example.jsonc wrangler.jsonc`
+  - [ ] `cp .env.example .env`
+- [ ] **SECURITY CHECK:** Confirmed `wrangler.jsonc` and `.env` are NOT tracked by git
 - [ ] Worker name updated (no spaces, hyphens/underscores only)
 - [ ] Account ID updated (from `wrangler whoami`)
 - [ ] Database name and ID updated
 - [ ] FROM_EMAIL updated (must be on your Cloudflare domain)
 - [ ] ADMIN_EMAIL updated (must be verified in Email Routing)
 - [ ] `allowed_destination_addresses` updated with verified emails
+- [ ] **SECURITY CHECK:** No production credentials in any committed files
 
 ### ✅ Application Configuration
 - [ ] `src/config.ts` updated with your company information
@@ -107,10 +112,22 @@ Use this checklist to ensure your contact form deployment is properly configured
 - [ ] User information shows (if using Cloudflare Access)
 
 ### ✅ Security Testing
+- [ ] **CRITICAL:** Verify no production secrets committed to repository
+  ```bash
+  git log --oneline --grep="secret\|password\|key\|token" --all
+  git log --oneline -S "account_id" --all
+  git log --oneline -S "database_id" --all
+  ```
+- [ ] **CRITICAL:** Confirm `wrangler.jsonc` and `.env` are gitignored
+  ```bash
+  git status --ignored | grep -E "(wrangler\.jsonc|\.env$)"
+  ```
 - [ ] Admin panel properly secured (try accessing without auth)
 - [ ] CORS headers work for form submissions
 - [ ] No sensitive information exposed in errors
 - [ ] Database queries use parameterized statements
+- [ ] Configuration files contain only template/example values in repository
+- [ ] All production credentials stored securely (Wrangler secrets or local files)
 
 ## 📊 Monitoring Setup
 

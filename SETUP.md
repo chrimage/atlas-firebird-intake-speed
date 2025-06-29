@@ -84,9 +84,17 @@ Content: v=spf1 include:_spf.mx.cloudflare.net ~all
 
 ## ⚙️ Step 4: Configure Your Deployment
 
-### Update wrangler.jsonc
+### 🔐 Configure Your Deployment Securely
 
-Copy `wrangler.example.jsonc` to `wrangler.jsonc` and update these values:
+**CRITICAL SECURITY STEP:** Copy template files and update with your actual values. **NEVER commit these files to your repository.**
+
+```bash
+# Copy template configuration files
+cp wrangler.example.jsonc wrangler.jsonc
+cp .env.example .env
+```
+
+**Update `wrangler.jsonc` with your actual values:**
 
 ```jsonc
 {
@@ -115,6 +123,24 @@ Copy `wrangler.example.jsonc` to `wrangler.jsonc` and update these values:
   ]
 }
 ```
+
+**Update `.env` file (optional, for additional security):**
+
+```bash
+# Your Cloudflare credentials
+CLOUDFLARE_ACCOUNT_ID=your_actual_account_id
+CLOUDFLARE_DATABASE_ID=your_actual_database_id
+
+# Email configuration
+FROM_EMAIL=contact@yourdomain.com
+ADMIN_EMAIL=admin@yourdomain.com
+ALLOWED_ADMIN_EMAILS=admin@yourdomain.com,manager@yourdomain.com
+
+# Environment
+ENVIRONMENT=production
+```
+
+⚠️ **SECURITY WARNING:** The `.gitignore` file is configured to prevent these files from being committed. Verify this before committing any changes.
 
 ### Update Configuration Variables
 
@@ -290,11 +316,45 @@ curl -X POST http://localhost:8787/submit \
 
 ## 🔐 Security Best Practices
 
-1. **Always use HTTPS** (automatically enforced by Cloudflare)
-2. **Limit admin access** via Cloudflare Access or email verification
-3. **Monitor for abuse** using Cloudflare Analytics
-4. **Regular backups** of D1 database (export via dashboard)
-5. **Keep dependencies updated** (`npm audit` regularly)
+### Configuration File Security
+1. **NEVER commit sensitive configuration files** to your repository:
+   - `wrangler.jsonc` contains account IDs and database IDs
+   - `.env` files contain API keys and credentials
+   - Always use template files (`wrangler.example.jsonc`, `.env.example`) in your repo
+
+2. **Use environment variables for sensitive data:**
+   ```bash
+   # Set secrets using Wrangler CLI (recommended for production)
+   wrangler secret put ADMIN_EMAIL
+   wrangler secret put CLOUDFLARE_ACCOUNT_ID
+   wrangler secret put CLOUDFLARE_DATABASE_ID
+   ```
+
+3. **Verify .gitignore protection:**
+   ```bash
+   # Check that sensitive files are ignored
+   git status
+   # Should NOT show wrangler.jsonc or .env files
+   ```
+
+### Access Control Security
+4. **Always use HTTPS** (automatically enforced by Cloudflare)
+5. **Secure admin access** via Cloudflare Access or email verification
+6. **Limit admin emails** to only necessary personnel
+7. **Use strong authentication methods** (prefer OAuth over email OTP)
+
+### Operational Security
+8. **Monitor for abuse** using Cloudflare Analytics
+9. **Regular backups** of D1 database (export via dashboard)
+10. **Keep dependencies updated** (`npm audit` regularly)
+11. **Review access logs** periodically in Cloudflare Dashboard
+12. **Rotate secrets** periodically (database IDs, API keys)
+
+### Development Security
+13. **Use separate environments** for development, staging, and production
+14. **Never use production credentials** in development
+15. **Test security controls** before going live
+16. **Document security procedures** for your team
 
 ## 💰 Cost Estimation
 

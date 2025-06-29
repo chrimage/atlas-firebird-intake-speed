@@ -87,12 +87,55 @@ Based on the design specification, the site uses:
 
 ## Setup
 
-1. Configure Cloudflare Workers account
-2. Set up D1 database
-3. Configure email routing
-4. Deploy with `npm run deploy`
+1. **Clone and install dependencies:**
+   ```bash
+   git clone <repository-url>
+   cd atlas-divisions-rebuild
+   npm install
+   ```
 
-See [SETUP.md](SETUP.md) for detailed instructions.
+2. **Configure Cloudflare Workers account:**
+   ```bash
+   npm install -g wrangler
+   wrangler login
+   ```
+
+3. **Set up environment configuration:**
+   ```bash
+   # Copy template configuration files
+   cp wrangler.example.jsonc wrangler.jsonc
+   cp .env.example .env
+   
+   # Update with your actual values
+   # NEVER commit these files to the repository
+   ```
+
+4. **Create D1 database and apply schema:**
+   ```bash
+   wrangler d1 create atlas-divisions-contact-db
+   wrangler d1 execute atlas-divisions-contact-db --file=schema.sql
+   ```
+
+5. **Deploy:**
+   ```bash
+   npm run deploy
+   ```
+
+See [SETUP.md](SETUP.md) for detailed instructions and [SECURITY.md](SECURITY.md) for comprehensive security guidelines.
+
+## 🔐 Security Notes
+
+**IMPORTANT:** This repository follows security best practices:
+
+- ✅ Production credentials are **never committed** to the repository
+- ✅ Template files (`wrangler.example.jsonc`, `.env.example`) show the required format
+- ✅ Actual configuration files (`wrangler.jsonc`, `.env`) are gitignored
+- ✅ Admin access is secured via Cloudflare Access or email verification
+
+**Files that contain secrets and should NOT be committed:**
+- `wrangler.jsonc` (contains account IDs, database IDs)
+- `.env` (contains API keys and credentials)
+- Any `wrangler.*.jsonc` files with actual values
 
 ## License
 

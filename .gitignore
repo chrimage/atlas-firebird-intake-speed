@@ -176,6 +176,17 @@ dist
 .dev.vars
 .wrangler/
 
+# Production configuration files (contain sensitive data)
+wrangler.jsonc
+wrangler.prod.jsonc
+wrangler.staging.jsonc
+
+# Local environment files
+.env
+.env.local
+.env.production
+.env.staging
+
 # Planning documents (internal development docs - in parent directory)
 ../.planning/
 cloudflare-workers-auth-research-prompt.md
