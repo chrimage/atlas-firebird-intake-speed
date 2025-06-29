@@ -10,6 +10,12 @@ Use this checklist to ensure your contact form deployment is properly configured
 - [ ] Domain is active (not just DNS-only)
 
 ### ✅ Email Routing Configuration
+
+#### Mailgun Setup
+- [ ] Ensure DNS for `mg.atlasdivisions.com` includes SPF and DKIM records.
+- [ ] Add `MG_DOMAIN` in `wrangler.jsonc` under `"vars"`.
+- [ ] Store `MG_API_KEY` securely via `npx wrangler secret put MG_API_KEY`.
+
 - [ ] Email Routing enabled for your domain
 - [ ] MX records automatically configured by Cloudflare
 - [ ] SPF record added: `v=spf1 include:_spf.mx.cloudflare.net ~all`
