@@ -32,17 +32,8 @@
 	"vars": {
 		"FROM_EMAIL": "dev-contact@yourdomain.com",
 		"ADMIN_EMAIL": "dev-admin@yourdomain.com",
+		"MG_DOMAIN": "mg.yourdomain.com",
+		"MG_API_KEY": "key-your-dev-mailgun-api-key-here",
 		"ENVIRONMENT": "development"
-	},
-	
-	// Email sending disabled in development by default
-	// Uncomment and configure if you want to test emails
-	// "send_email": [
-	//   {
-	//     "name": "EMAIL_SENDER",
-	//     "allowed_destination_addresses": [
-	//       "dev-admin@yourdomain.com"
-	//     ]
-	//   }
-	// ]
+	}
 }

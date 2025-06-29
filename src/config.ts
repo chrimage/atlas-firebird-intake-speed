@@ -1,6 +1,6 @@
-es/**
+/**
  * Application Configuration
- * 
+ *
  * Customize these values for your deployment
  */
 

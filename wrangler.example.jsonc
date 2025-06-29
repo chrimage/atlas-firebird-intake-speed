@@ -46,28 +46,21 @@
 	],
 	
 	"vars": {
-		// TODO: Change to your sending email address (must be on domain with Cloudflare Email Routing)
+		// TODO: Change to your sending email address
 		"FROM_EMAIL": "contact@yourdomain.com",
 		
 		// TODO: Change to where you want admin notifications sent
 		"ADMIN_EMAIL": "admin@yourdomain.com",
 		
+		// TODO: Add your Mailgun domain (e.g., "mg.yourdomain.com")
+		"MG_DOMAIN": "mg.yourdomain.com",
+		
+		// TODO: Add your Mailgun private API key
+		// SECURITY: This is sensitive - never commit the real value
+		"MG_API_KEY": "key-your-mailgun-api-key-here",
+		
 		"ENVIRONMENT": "production"
-	},
-	
-	"send_email": [
-		{
-			"name": "EMAIL_SENDER",
-			"allowed_destination_addresses": [
-				// TODO: Add all email addresses that should receive notifications
-				// These MUST be verified in Cloudflare Email Routing first
-				// SECURITY: Use real admin emails in your actual wrangler.jsonc
-				"admin@yourdomain.com",
-				"support@yourdomain.com",
-				"manager@yourdomain.com"
-			]
-		}
-	]
+	}
 	
 	/**
 	 * Optional Advanced Configuration
