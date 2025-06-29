@@ -24,7 +24,8 @@ export interface CloudflareAccessUser {
 
 export interface Env {
 	DB: D1Database;
-	EMAIL_SENDER: any;
+	MAILGUN_API_KEY: string;
+	MAILGUN_DOMAIN: string;
 	FROM_EMAIL: string;
 	ADMIN_EMAIL: string;
 	ENVIRONMENT?: string;

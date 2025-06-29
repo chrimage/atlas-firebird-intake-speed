@@ -37,19 +37,10 @@
 	"vars": {
 		"FROM_EMAIL": "contact@yourdomain.com",
 		"ADMIN_EMAIL": "admin@yourdomain.com",
+		"MAILGUN_DOMAIN": "mg.yourdomain.com",
+		"MAILGUN_API_KEY": "key-your-production-mailgun-api-key-here",
 		"ENVIRONMENT": "production"
 	},
-	
-	"send_email": [
-		{
-			"name": "EMAIL_SENDER",
-			"allowed_destination_addresses": [
-				"admin@yourdomain.com",
-				"support@yourdomain.com",
-				"manager@yourdomain.com"
-			]
-		}
-	],
 	
 	// Optional: Custom domain configuration
 	// Uncomment and configure after setting up custom domain in Cloudflare Dashboard
